@@ -1,78 +1,55 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
-// ─── Workouts Page ──────────────────────────────────────────
-// Workout logging with AI suggestions and workout history
+// ─── Workouts Page (Frontend-only) ──────────────────────────
+// Workout logging stored in localStorage
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
-import api from '@/lib/api';
 import WorkoutTimer from '@/components/WorkoutTimer';
-
+import { getWorkouts, addWorkout, deleteWorkout } from '@/lib/store';
 
 const workoutTypes = [
-  { value: 'cardio', label: 'Cardio', icon: '🏃' },
   { value: 'strength', label: 'Strength', icon: '🏋️' },
-  { value: 'flexibility', label: 'Flexibility', icon: '🧘' },
+  { value: 'cardio', label: 'Cardio', icon: '🏃' },
   { value: 'hiit', label: 'HIIT', icon: '⚡' },
+  { value: 'flexibility', label: 'Flexibility', icon: '🧘' },
   { value: 'sports', label: 'Sports', icon: '⚽' },
+  { value: 'other', label: 'Other', icon: '🎯' },
 ];
 
 export default function WorkoutsPage() {
   const [workouts, setWorkouts] = useState([]);
-  const [type, setType] = useState('cardio');
   const [name, setName] = useState('');
-  const [duration, setDuration] = useState('');
+  const [type, setType] = useState('strength');
+  const [duration, setDuration] = useState('30');
   const [calories, setCalories] = useState('');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [suggestion, setSuggestion] = useState(null);
-  const [suggesting, setSuggesting] = useState(false);
 
-  useEffect(() => { fetchWorkouts(); }, []);
+  useEffect(() => {
+    setWorkouts(getWorkouts());
+    setLoading(false);
+  }, []);
 
-  const fetchWorkouts = async () => {
-    try {
-      const { data } = await api.get('/workouts');
-      setWorkouts(data.workouts);
-    } catch (err) {
-      console.error('Failed to fetch workouts:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSuggest = async () => {
-    setSuggesting(true);
-    try {
-      const { data } = await api.post('/ai/suggest-workout', {
-        preferences: { type, duration: parseInt(duration) || 30 },
-      });
-      setSuggestion(data.suggestion);
-    } catch (err) {
-      console.error('Suggestion failed:', err);
-    } finally {
-      setSuggesting(false);
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!name.trim() || !duration) return;
     setSaving(true);
     try {
-      await api.post('/workouts', {
-        type,
+      addWorkout({
         name,
+        type,
         duration: parseInt(duration),
         calories: calories ? parseFloat(calories) : null,
         notes: notes || null,
       });
       setName('');
-      setDuration('');
+      setDuration('30');
       setCalories('');
       setNotes('');
-      fetchWorkouts();
+      setWorkouts(getWorkouts());
     } catch (err) {
       console.error('Failed to log workout:', err);
     } finally {
@@ -80,31 +57,23 @@ export default function WorkoutsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(`/workouts/${id}`);
-      setWorkouts(workouts.filter((w) => w.id !== id));
-    } catch (err) {
-      console.error('Failed to delete workout:', err);
-    }
+  const handleDelete = (id) => {
+    deleteWorkout(id);
+    setWorkouts(getWorkouts());
   };
 
-  // Use an AI suggestion to pre-fill the form
-  const useSuggestion = () => {
-    if (!suggestion) return;
-    setName(suggestion.name);
-    setType(suggestion.type);
-    setDuration(String(suggestion.duration));
-    setCalories(String(suggestion.estimatedCalories || ''));
-    setSuggestion(null);
+  const handleTimerFinish = (seconds) => {
+    setDuration(Math.round(seconds / 60).toString());
   };
 
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-text">Workouts</h1>
-          <p className="text-text-muted text-sm mt-1">Log workouts and get AI-powered exercise suggestions</p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-text">Workouts</h1>
+            <p className="text-text-muted text-sm mt-1">Log and track your exercise sessions</p>
+          </div>
         </div>
 
         {/* Log Workout Form */}
@@ -130,7 +99,6 @@ export default function WorkoutsPage() {
               ))}
             </div>
 
-            {/* Form Fields */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-text-muted mb-1.5">Workout Name</label>
@@ -144,17 +112,19 @@ export default function WorkoutsPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-1.5">Duration (minutes)</label>
+                <label className="block text-sm font-medium text-text-muted mb-1.5">Duration (min)</label>
                 <input
                   type="number"
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   className="input"
-                  placeholder="30"
                   min="1"
                   required
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-medium text-text-muted mb-1.5">Calories Burned (optional)</label>
                 <input
@@ -162,7 +132,7 @@ export default function WorkoutsPage() {
                   value={calories}
                   onChange={(e) => setCalories(e.target.value)}
                   className="input"
-                  placeholder="250"
+                  placeholder="e.g., 350"
                 />
               </div>
               <div>
@@ -177,60 +147,10 @@ export default function WorkoutsPage() {
               </div>
             </div>
 
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleSuggest}
-                disabled={suggesting}
-                className="btn-secondary"
-              >
-                {suggesting ? '⏳ Thinking...' : '🤖 AI Suggest'}
-              </button>
-              <button type="submit" disabled={saving || !name.trim() || !duration} className="btn-primary">
-                {saving ? '⏳ Saving...' : '✅ Log Workout'}
-              </button>
-            </div>
+            <button type="submit" disabled={saving || !name.trim()} className="btn-primary">
+              {saving ? '⏳ Saving...' : '✅ Log Workout'}
+            </button>
           </form>
-
-          {/* AI Suggestion */}
-          {suggestion && (
-            <div className="mt-5 p-5 rounded-xl animate-fade-in" style={{
-              opacity: 0,
-              background: 'linear-gradient(135deg, rgba(212,197,249,0.3), rgba(184,240,216,0.3))',
-            }}>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-lavender-dark uppercase tracking-wide">🤖 AI Suggestion: {suggestion.name}</h3>
-                <button onClick={useSuggestion} className="btn-primary text-xs py-1.5 px-3">
-                  Use This
-                </button>
-              </div>
-              <p className="text-sm text-text-muted mb-3">
-                {suggestion.type} · {suggestion.duration} min · ~{suggestion.estimatedCalories} cal
-              </p>
-              {suggestion.exercises && (
-                <div className="space-y-2 mb-3">
-                  {suggestion.exercises.map((ex, i) => (
-                    <div key={i} className="flex items-center gap-3 text-sm">
-                      <span className="w-6 h-6 rounded-full bg-lavender-light text-lavender-dark text-xs font-bold flex items-center justify-center">
-                        {i + 1}
-                      </span>
-                      <span className="font-medium text-text">{ex.name}</span>
-                      <span className="text-text-muted">
-                        {ex.sets && `${ex.sets} × `}{ex.reps || ex.duration}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {suggestion.tips && (
-                <div className="space-y-1">
-                  {suggestion.tips.map((tip, i) => (
-                    <p key={i} className="text-xs text-text-muted">💡 {tip}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Workout History */}
@@ -248,23 +168,23 @@ export default function WorkoutsPage() {
           ) : workouts.length === 0 ? (
             <div className="glass-card p-8 text-center">
               <span className="text-4xl mb-3 block">💪</span>
-              <p className="text-text-muted">No workouts logged yet. Get moving!</p>
+              <p className="text-text-muted">No workouts logged yet. Start tracking above!</p>
             </div>
           ) : (
             <div className="space-y-3">
               {workouts.map((w) => (
                 <div key={w.id} className="glass-card p-4 flex items-center gap-4 animate-fade-in" style={{ opacity: 0 }}>
                   <span className="text-2xl">
-                    {workoutTypes.find((t) => t.value === w.type)?.icon || '💪'}
+                    {workoutTypes.find((t) => t.value === w.type)?.icon || '🎯'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-text">{w.name}</p>
+                    <p className="font-medium text-text truncate">{w.name}</p>
                     <p className="text-xs text-text-muted mt-0.5">
                       {w.type} · {w.duration} min · {new Date(w.loggedAt).toLocaleString()}
                     </p>
                   </div>
                   {w.calories && (
-                    <span className="text-sm font-semibold text-lavender-dark">{w.calories.toFixed(0)} cal</span>
+                    <span className="text-xs text-peach-dark font-semibold">{w.calories} cal</span>
                   )}
                   <button
                     onClick={() => handleDelete(w.id)}
@@ -279,8 +199,7 @@ export default function WorkoutsPage() {
           )}
         </div>
       </div>
-      <WorkoutTimer onFinish={(mins) => setDuration(String(mins))} />
+      <WorkoutTimer onFinish={handleTimerFinish} />
     </AppShell>
-
   );
 }

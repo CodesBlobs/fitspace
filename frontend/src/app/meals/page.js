@@ -1,11 +1,13 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
-// ─── Meals Page ─────────────────────────────────────────────
-// Meal logging with AI analysis, text input, and meal history
+// ─── Meals Page (Frontend-only) ─────────────────────────────
+// Meal logging with AI analysis, stored in localStorage
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
-import api from '@/lib/api';
+import { getMeals, addMeal, deleteMeal } from '@/lib/store';
+import { analyzeMeal } from '@/lib/ai';
 
 const mealTypes = [
   { value: 'breakfast', label: 'Breakfast', icon: '🌅' },
@@ -23,26 +25,17 @@ export default function MealsPage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
 
-  useEffect(() => { fetchMeals(); }, []);
+  useEffect(() => {
+    setMeals(getMeals());
+    setLoading(false);
+  }, []);
 
-  const fetchMeals = async () => {
-    try {
-      const { data } = await api.get('/meals');
-      setMeals(data.meals);
-    } catch (err) {
-      console.error('Failed to fetch meals:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // AI meal analysis
   const handleAnalyze = async () => {
     if (!description.trim()) return;
     setAnalyzing(true);
     try {
-      const { data } = await api.post('/ai/analyze-meal', { description });
-      setAnalysis(data.analysis);
+      const result = await analyzeMeal(description);
+      setAnalysis(result);
     } catch (err) {
       console.error('Analysis failed:', err);
     } finally {
@@ -50,13 +43,12 @@ export default function MealsPage() {
     }
   };
 
-  // Log meal (with optional AI data)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!description.trim()) return;
     setSaving(true);
     try {
-      const payload = {
+      addMeal({
         description,
         mealType,
         ...(analysis && {
@@ -67,11 +59,10 @@ export default function MealsPage() {
           fiber: analysis.fiber,
           aiAnalysis: JSON.stringify(analysis),
         }),
-      };
-      await api.post('/meals', payload);
+      });
       setDescription('');
       setAnalysis(null);
-      fetchMeals();
+      setMeals(getMeals());
     } catch (err) {
       console.error('Failed to log meal:', err);
     } finally {
@@ -79,19 +70,14 @@ export default function MealsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await api.delete(`/meals/${id}`);
-      setMeals(meals.filter((m) => m.id !== id));
-    } catch (err) {
-      console.error('Failed to delete meal:', err);
-    }
+  const handleDelete = (id) => {
+    deleteMeal(id);
+    setMeals(getMeals());
   };
 
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-text">Meals & Nutrition</h1>
           <p className="text-text-muted text-sm mt-1">Log your meals and get AI-powered nutrition analysis</p>
@@ -101,7 +87,6 @@ export default function MealsPage() {
         <div className="glass-card p-6 mb-8 animate-fade-in" style={{ opacity: 0 }}>
           <h2 className="text-lg font-semibold text-text mb-4">🍽️ Log a Meal</h2>
           <form onSubmit={handleSubmit}>
-            {/* Meal Type Selector */}
             <div className="flex gap-2 mb-4">
               {mealTypes.map((t) => (
                 <button
@@ -120,7 +105,6 @@ export default function MealsPage() {
               ))}
             </div>
 
-            {/* Description */}
             <div className="mb-4">
               <textarea
                 value={description}
@@ -131,7 +115,6 @@ export default function MealsPage() {
               />
             </div>
 
-            {/* Action Buttons */}
             <div className="flex gap-3">
               <button
                 type="button"
@@ -212,10 +195,10 @@ export default function MealsPage() {
                   </div>
                   {meal.calories && (
                     <div className="flex gap-3 text-xs text-text-muted">
-                      <span className="text-peach-dark font-semibold">{meal.calories.toFixed(0)} cal</span>
-                      <span>P:{meal.protein?.toFixed(0)}g</span>
-                      <span>C:{meal.carbs?.toFixed(0)}g</span>
-                      <span>F:{meal.fat?.toFixed(0)}g</span>
+                      <span className="text-peach-dark font-semibold">{meal.calories} cal</span>
+                      <span>P:{meal.protein}g</span>
+                      <span>C:{meal.carbs}g</span>
+                      <span>F:{meal.fat}g</span>
                     </div>
                   )}
                   <button

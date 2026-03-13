@@ -1,29 +1,29 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
-// ─── Unified Log Page ─────────────────────────────────────────
-// A single interface for logging all daily activities and stats
+// ─── Unified Log Page (Frontend-only) ───────────────────────
+// Quick logging for meals, workouts, and stats via localStorage
 
 import { useState, useRef } from 'react';
 import AppShell from '@/components/AppShell';
-
-import api from '@/lib/api';
+import { addMeal, addWorkout, addWater, addSleep, addMood } from '@/lib/store';
+import { analyzeMeal, transcribeAudio } from '@/lib/ai';
 
 export default function UnifiedLogPage() {
   const [activeTab, setActiveTab] = useState('meal');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
 
-  // Form states
   const [mealDesc, setMealDesc] = useState('');
   const [workoutDesc, setWorkoutDesc] = useState('');
   const [sleepHours, setSleepHours] = useState('8');
   const [waterAmount, setWaterAmount] = useState('250');
-  const [mood, setMood] = useState('happy');
 
   // Voice Recording state
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
+  const streamRef = useRef(null);
 
   const showSuccess = (msg) => {
     setSuccess(msg);
@@ -34,31 +34,22 @@ export default function UnifiedLogPage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const formData = new FormData();
-        formData.append('audio', audioBlob, 'record.webm');
-
         setLoading(true);
         try {
-          const response = await api.post('/ai/transcribe', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-          });
-          
-          const text = response.data.text;
+          const text = await transcribeAudio(audioBlob);
           if (activeTab === 'meal') setMealDesc(text);
           else if (activeTab === 'workout') setWorkoutDesc(text);
-          
           showSuccess('Voice transcribed! ✨');
         } catch (err) {
           console.error('Transcription failed:', err);
@@ -83,40 +74,36 @@ export default function UnifiedLogPage() {
   };
 
   const logMeal = async (e) => {
-// ... existing logMeal code ...
-
     e.preventDefault();
     setLoading(true);
     try {
-      // First analyze via AI
-      const analysis = await api.post('/ai/analyze-meal', { description: mealDesc });
-      const { calories, protein, carbs, fat } = analysis.data;
-      // Then save
-      await api.post('/meals', { name: mealDesc, calories, protein, carbs, fat });
+      const analysis = await analyzeMeal(mealDesc);
+      addMeal({
+        description: mealDesc,
+        mealType: 'meal',
+        calories: analysis.calories,
+        protein: analysis.protein,
+        carbs: analysis.carbs,
+        fat: analysis.fat,
+      });
       setMealDesc('');
       showSuccess('Meal logged! 🍽️');
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
 
-  const logWorkout = async (e) => {
+  const logWorkout = (e) => {
     e.preventDefault();
-    setLoading(true);
-    try {
-      await api.post('/workouts', { name: workoutDesc, duration: 30, calories: 250, type: 'strength' });
-      setWorkoutDesc('');
-      showSuccess('Workout logged! 💪');
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    addWorkout({ name: workoutDesc, duration: 30, calories: 250, type: 'strength' });
+    setWorkoutDesc('');
+    showSuccess('Workout logged! 💪');
   };
 
-  const logQuickStat = async (type, data) => {
-    setLoading(true);
-    try {
-      await api.post(`/tracking/${type}`, data);
-      showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} updated! ✨`);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+  const logQuickStat = (type, data) => {
+    if (type === 'water') addWater(data.amount);
+    else if (type === 'sleep') addSleep(data);
+    else if (type === 'mood') addMood(data);
+    showSuccess(`${type.charAt(0).toUpperCase() + type.slice(1)} updated! ✨`);
   };
 
   return (
@@ -155,7 +142,7 @@ export default function UnifiedLogPage() {
           ))}
         </div>
 
-        {/* ─── Meal Log ─────────────────────────────────────────── */}
+        {/* Meal Log */}
         {activeTab === 'meal' && (
           <form onSubmit={logMeal} className="glass-card p-8 animate-fade-in">
             <label className="block text-sm font-bold text-text-muted mb-3 uppercase tracking-wider">What did you eat?</label>
@@ -182,12 +169,7 @@ export default function UnifiedLogPage() {
                 🎙️
               </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading || !mealDesc}
-              className="btn-primary w-full py-4 text-lg font-black group relative overflow-hidden"
-            >
+            <button type="submit" disabled={loading || !mealDesc} className="btn-primary w-full py-4 text-lg font-black group relative overflow-hidden">
               <span className="relative z-10">{loading ? '⌛ Analyzing Nutrition...' : '✅ Log Meal'}</span>
               <div className="absolute inset-0 bg-gradient-to-r from-rose to-peach opacity-0 group-hover:opacity-20 transition-opacity" />
             </button>
@@ -197,7 +179,7 @@ export default function UnifiedLogPage() {
           </form>
         )}
 
-        {/* ─── Workout Log ─────────────────────────────────────── */}
+        {/* Workout Log */}
         {activeTab === 'workout' && (
           <form onSubmit={logWorkout} className="glass-card p-8 animate-fade-in border-t-4 border-lavender">
             <label className="block text-sm font-bold text-text-muted mb-3 uppercase tracking-wider">Workout Description</label>
@@ -225,61 +207,35 @@ export default function UnifiedLogPage() {
                 🎙️
               </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading || !workoutDesc}
-              className="btn-primary bg-lavender hover:bg-lavender-dark border-lavender-dark/20 w-full py-4 text-lg font-black"
-            >
+            <button type="submit" disabled={loading || !workoutDesc} className="btn-primary bg-lavender hover:bg-lavender-dark border-lavender-dark/20 w-full py-4 text-lg font-black">
               {loading ? '⌛ Saving...' : '✅ Log Workout'}
             </button>
           </form>
         )}
 
-        {/* ─── Quick Stats ─────────────────────────────────────── */}
+        {/* Quick Stats */}
         {activeTab === 'stats' && (
           <div className="space-y-4 animate-fade-in">
             <div className="glass-card p-6 flex items-center justify-between gap-4 border-l-4 border-sky">
               <div className="flex-1">
                 <label className="block text-xs font-bold text-sky-dark mb-1 uppercase tracking-tighter">Hydration</label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    value={waterAmount}
-                    onChange={(e) => setWaterAmount(e.target.value)}
-                    className="input py-2 text-center font-bold"
-                  />
+                  <input type="number" value={waterAmount} onChange={(e) => setWaterAmount(e.target.value)} className="input py-2 text-center font-bold" />
                   <span className="text-text-muted">ml</span>
                 </div>
               </div>
-              <button
-                onClick={() => logQuickStat('water', { amount: parseInt(waterAmount) })}
-                className="btn-primary bg-sky hover:bg-sky-dark border-sky-dark/20 h-14 w-14 rounded-2xl flex items-center justify-center text-xl"
-              >
-                💧
-              </button>
+              <button onClick={() => logQuickStat('water', { amount: parseInt(waterAmount) })} className="btn-primary bg-sky hover:bg-sky-dark border-sky-dark/20 h-14 w-14 rounded-2xl flex items-center justify-center text-xl">💧</button>
             </div>
 
             <div className="glass-card p-6 flex items-center justify-between gap-4 border-l-4 border-mint">
               <div className="flex-1">
                 <label className="block text-xs font-bold text-mint-dark mb-1 uppercase tracking-tighter">Sleep</label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="number"
-                    value={sleepHours}
-                    onChange={(e) => setSleepHours(e.target.value)}
-                    className="input py-2 text-center font-bold"
-                    step="0.5"
-                  />
+                  <input type="number" value={sleepHours} onChange={(e) => setSleepHours(e.target.value)} className="input py-2 text-center font-bold" step="0.5" />
                   <span className="text-text-muted">hrs</span>
                 </div>
               </div>
-              <button
-                onClick={() => logQuickStat('sleep', { hours: parseFloat(sleepHours), quality: 4 })}
-                className="btn-primary bg-mint hover:bg-mint-dark border-mint-dark/20 h-14 w-14 rounded-2xl flex items-center justify-center text-xl"
-              >
-                😴
-              </button>
+              <button onClick={() => logQuickStat('sleep', { hours: parseFloat(sleepHours), quality: 4 })} className="btn-primary bg-mint hover:bg-mint-dark border-mint-dark/20 h-14 w-14 rounded-2xl flex items-center justify-center text-xl">😴</button>
             </div>
 
             <div className="glass-card p-6 grid grid-cols-5 gap-2 border-l-4 border-sunshine">

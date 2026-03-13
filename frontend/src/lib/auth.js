@@ -1,11 +1,11 @@
 'use client';
 
-// ─── Auth Context ───────────────────────────────────────────
-// Provides login/logout/register + protected route wrapper
+// ─── Auth Context (Frontend-Only) ───────────────────────────
+// No server, no JWT. Profile stored in localStorage.
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import api from './api';
+import { getProfile, updateProfile } from './store';
 
 const AuthContext = createContext(null);
 
@@ -14,55 +14,40 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Restore user from localStorage on mount
   useEffect(() => {
-    const token = localStorage.getItem('fitspace_token');
-    const stored = localStorage.getItem('fitspace_user');
-    if (token && stored) {
-      setUser(JSON.parse(stored));
+    const profile = getProfile();
+    if (profile.name) {
+      setUser(profile);
     }
     setLoading(false);
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      const { user, token } = response.data;
-      localStorage.setItem('fitspace_token', token);
-      localStorage.setItem('fitspace_user', JSON.stringify(user));
-      setUser(user);
-      router.push('/dashboard');
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
-  };
-
-  const updateUserInfo = (updatedUser) => {
-    const newUser = { ...user, ...updatedUser };
-    localStorage.setItem('fitspace_user', JSON.stringify(newUser));
-    setUser(newUser);
-  };
-
-
-  const register = async (email, password, name) => {
-    const { data } = await api.post('/auth/register', { email, password, name });
-    localStorage.setItem('fitspace_token', data.token);
-    localStorage.setItem('fitspace_user', JSON.stringify(data.user));
-    setUser(data.user);
+    // Frontend-only: just set a profile
+    const profile = updateProfile({ name: email.split('@')[0], email });
+    setUser(profile);
     router.push('/dashboard');
   };
 
+  const register = async (email, password, name) => {
+    const profile = updateProfile({ name, email });
+    setUser(profile);
+    router.push('/dashboard');
+  };
+
+  const updateUserInfo = (updates) => {
+    const updated = updateProfile(updates);
+    setUser(updated);
+  };
+
   const logout = () => {
-    localStorage.removeItem('fitspace_token');
-    localStorage.removeItem('fitspace_user');
+    localStorage.removeItem('fitspace_profile');
     setUser(null);
     router.push('/login');
   };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, register, logout, updateUserInfo }}>
-
       {children}
     </AuthContext.Provider>
   );
@@ -70,9 +55,13 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  if (!ctx) {
+    // Return safe default during SSR/prerendering
+    return { user: null, loading: true, login: () => {}, register: () => {}, logout: () => {}, updateUserInfo: () => {} };
+  }
   return ctx;
 }
+
 
 // ─── Protected Route Wrapper ────────────────────────────────
 export function ProtectedRoute({ children }) {

@@ -1,14 +1,15 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
 // ─── Dashboard Page ─────────────────────────────────────────
-// Summary cards, weekly charts, and AI insight
+// Summary cards, weekly charts, and AI insight (Frontend-only)
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import StatCard from '@/components/StatCard';
 import AIInsightCard from '@/components/AIInsightCard';
 import { BarChart, LineChart } from '@/components/Chart';
-import api from '@/lib/api';
+import { getDashboardSummary, getWeeklyTrends } from '@/lib/store';
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState(null);
@@ -16,23 +17,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
+    setSummary(getDashboardSummary());
+    setWeekly(getWeeklyTrends());
+    setLoading(false);
   }, []);
-
-  const fetchData = async () => {
-    try {
-      const [summaryRes, weeklyRes] = await Promise.all([
-        api.get('/dashboard/summary'),
-        api.get('/dashboard/weekly'),
-      ]);
-      setSummary(summaryRes.data.summary);
-      setWeekly(weeklyRes.data.weekly);
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const moodEmoji = {
     happy: '😊', calm: '😌', energetic: '⚡', tired: '😴', stressed: '😰', sad: '😢',

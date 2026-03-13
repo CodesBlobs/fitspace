@@ -1,10 +1,11 @@
 'use client';
 
-// ─── AI Insight Card ────────────────────────────────────────
-// Displays AI-generated daily insight with sparkle animation
+// ─── AI Insight Card (Frontend-only) ────────────────────────
+// Calls OpenAI directly from the browser
 
 import { useState, useEffect } from 'react';
-import api from '@/lib/api';
+import { getDailyInsight } from '@/lib/ai';
+import { getDashboardSummary } from '@/lib/store';
 
 export default function AIInsightCard() {
   const [insight, setInsight] = useState(null);
@@ -17,8 +18,14 @@ export default function AIInsightCard() {
   const fetchInsight = async () => {
     try {
       setLoading(true);
-      const { data } = await api.get('/ai/daily-insight');
-      setInsight(data.insight);
+      const summary = getDashboardSummary();
+      const userData = {
+        mealsLoggedThisWeek: summary.mealsLogged,
+        workoutsThisWeek: summary.workouts.count,
+        recentMoods: summary.mood ? [summary.mood.mood] : [],
+      };
+      const result = await getDailyInsight(userData);
+      setInsight(result);
     } catch (err) {
       console.error('Failed to fetch insight:', err);
       setInsight({
@@ -48,7 +55,6 @@ export default function AIInsightCard() {
     <div className="glass-card p-6 relative overflow-hidden" style={{
       background: 'linear-gradient(135deg, rgba(212, 197, 249, 0.25) 0%, rgba(186, 230, 253, 0.25) 50%, rgba(184, 240, 216, 0.25) 100%)',
     }}>
-      {/* Sparkle decoration */}
       <span className="absolute top-4 right-4 text-2xl animate-sparkle">✨</span>
 
       <div className="flex items-center gap-2 mb-3">
