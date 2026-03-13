@@ -1,213 +1,164 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-// ─── Meals Page (Frontend-only) ─────────────────────────────
-// Meal logging with AI analysis, stored in localStorage
+// ─── Meals Page (Unified API) ───────────────────────────────
+// Meal logging with AI analysis via server routes
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
-import { getMeals, addMeal, deleteMeal } from '@/lib/store';
-import { analyzeMeal } from '@/lib/ai';
-
-const mealTypes = [
-  { value: 'breakfast', label: 'Breakfast', icon: '🌅' },
-  { value: 'lunch', label: 'Lunch', icon: '☀️' },
-  { value: 'dinner', label: 'Dinner', icon: '🌙' },
-  { value: 'snack', label: 'Snack', icon: '🍎' },
-];
+import { api } from '@/lib/api';
 
 export default function MealsPage() {
   const [meals, setMeals] = useState([]);
   const [description, setDescription] = useState('');
-  const [mealType, setMealType] = useState('lunch');
+  const [mealType, setMealType] = useState('breakfast');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
 
   useEffect(() => {
-    setMeals(getMeals());
-    setLoading(false);
+    fetchMeals();
   }, []);
 
-  const handleAnalyze = async () => {
+  const fetchMeals = async () => {
+    try {
+      const data = await api.getMeals();
+      setMeals(data.meals);
+    } catch (err) {
+      console.error('Failed to fetch meals:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogMeal = async (e) => {
+    e.preventDefault();
     if (!description.trim()) return;
+
     setAnalyzing(true);
     try {
-      const result = await analyzeMeal(description);
-      setAnalysis(result);
+      // 1. Get AI analysis from server
+      const { analysis } = await api.analyzeMeal(description);
+      
+      // 2. Log final meal entry to DB
+      await api.logMeal({
+        description,
+        mealType,
+        ...analysis,
+        aiAnalysis: JSON.stringify(analysis)
+      });
+
+      setDescription('');
+      fetchMeals();
     } catch (err) {
-      console.error('Analysis failed:', err);
+      console.error('Meal logging failed:', err);
     } finally {
       setAnalyzing(false);
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!description.trim()) return;
-    setSaving(true);
+  const handleDeleteMeal = async (id) => {
     try {
-      addMeal({
-        description,
-        mealType,
-        ...(analysis && {
-          calories: analysis.calories,
-          protein: analysis.protein,
-          carbs: analysis.carbs,
-          fat: analysis.fat,
-          fiber: analysis.fiber,
-          aiAnalysis: JSON.stringify(analysis),
-        }),
-      });
-      setDescription('');
-      setAnalysis(null);
-      setMeals(getMeals());
+      await api.deleteMeal(id);
+      setMeals(meals.filter(m => m.id !== id));
     } catch (err) {
-      console.error('Failed to log meal:', err);
-    } finally {
-      setSaving(false);
+      console.error('Failed to delete meal:', err);
     }
-  };
-
-  const handleDelete = (id) => {
-    deleteMeal(id);
-    setMeals(getMeals());
   };
 
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-text">Meals & Nutrition</h1>
-          <p className="text-text-muted text-sm mt-1">Log your meals and get AI-powered nutrition analysis</p>
+          <h1 className="text-2xl font-bold text-text tracking-tight">Nutrition Tracker</h1>
+          <p className="text-text-muted text-sm mt-1">AI-powered calorie and macro estimation.</p>
         </div>
 
-        {/* Log Meal Form */}
-        <div className="glass-card p-6 mb-8 animate-fade-in" style={{ opacity: 0 }}>
-          <h2 className="text-lg font-semibold text-text mb-4">🍽️ Log a Meal</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="flex gap-2 mb-4">
-              {mealTypes.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setMealType(t.value)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    mealType === t.value
-                      ? 'bg-lavender-light text-lavender-dark border-2 border-lavender-dark'
-                      : 'bg-surface-subtle text-text-muted border-2 border-transparent hover:border-border'
-                  }`}
-                >
-                  <span>{t.icon}</span>
-                  {t.label}
-                </button>
-              ))}
-            </div>
+        {/* Input Card */}
+        <div className="glass-card p-6 mb-8 border-t-4 border-rose relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
+            <span className="text-6xl">🥘</span>
+          </div>
+          
+          <h2 className="text-lg font-bold text-text mb-4 flex items-center gap-2">
+            <span>🍽️</span> What did you eat?
+          </h2>
 
-            <div className="mb-4">
-              <textarea
-                value={description}
-                onChange={(e) => { setDescription(e.target.value); setAnalysis(null); }}
-                className="input min-h-[80px] resize-none"
-                placeholder="Describe your meal... e.g., Grilled chicken salad with avocado and quinoa"
-                rows={3}
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleAnalyze}
-                disabled={analyzing || !description.trim()}
-                className="btn-secondary"
-              >
-                {analyzing ? '⏳ Analyzing...' : '🤖 AI Analyze'}
-              </button>
-              <button type="submit" disabled={saving || !description.trim()} className="btn-primary">
-                {saving ? '⏳ Saving...' : '✅ Log Meal'}
-              </button>
-            </div>
-          </form>
-
-          {/* AI Analysis Result */}
-          {analysis && (
-            <div className="mt-5 p-5 rounded-xl animate-fade-in" style={{
-              opacity: 0,
-              background: 'linear-gradient(135deg, rgba(184,240,216,0.3), rgba(186,230,253,0.3))',
-            }}>
-              <h3 className="text-sm font-semibold text-mint-dark uppercase tracking-wide mb-3">🤖 AI Nutrition Analysis</h3>
-              <div className="grid grid-cols-5 gap-3 mb-3">
-                {[
-                  { label: 'Calories', value: `${analysis.calories}`, unit: 'kcal', color: 'peach' },
-                  { label: 'Protein', value: `${analysis.protein}`, unit: 'g', color: 'lavender' },
-                  { label: 'Carbs', value: `${analysis.carbs}`, unit: 'g', color: 'sky' },
-                  { label: 'Fat', value: `${analysis.fat}`, unit: 'g', color: 'rose' },
-                  { label: 'Fiber', value: `${analysis.fiber}`, unit: 'g', color: 'mint' },
-                ].map((item) => (
-                  <div key={item.label} className={`p-3 rounded-xl bg-${item.color}-light text-center`}>
-                    <div className={`text-lg font-bold text-${item.color}-dark`}>{item.value}</div>
-                    <div className="text-xs text-text-muted">{item.label} ({item.unit})</div>
-                  </div>
-                ))}
+          <form onSubmit={handleLogMeal} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-3">
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. Avocado toast with two poached eggs"
+                  className="input min-h-[100px] resize-none"
+                  required
+                />
               </div>
-              {analysis.summary && <p className="text-sm text-text-muted">{analysis.summary}</p>}
-              {analysis.healthTips && (
-                <div className="mt-3 space-y-1">
-                  {analysis.healthTips.map((tip, i) => (
-                    <p key={i} className="text-xs text-text-muted">💡 {tip}</p>
-                  ))}
-                </div>
-              )}
+              <div className="flex flex-col gap-3">
+                <select
+                  value={mealType}
+                  onChange={(e) => setMealType(e.target.value)}
+                  className="input py-3"
+                >
+                  <option value="breakfast">Breakfast</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="dinner">Dinner</option>
+                  <option value="snack">Snack</option>
+                </select>
+                <button
+                  type="submit"
+                  disabled={analyzing || !description.trim()}
+                  className="btn-primary h-full font-black text-lg group overflow-hidden"
+                >
+                  <span className="relative z-10">{analyzing ? '⌛ Analyzing...' : '✅ Log'}</span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-rose to-peach opacity-0 group-hover:opacity-20 transition-opacity" />
+                </button>
+              </div>
             </div>
-          )}
+            <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest italic">
+              AI will automatically estimate calories, protein, carbs, and fats.
+            </p>
+          </form>
         </div>
 
-        {/* Meal History */}
+        {/* List */}
         <div>
-          <h2 className="text-lg font-semibold text-text mb-4">Recent Meals</h2>
+          <h2 className="text-lg font-bold text-text mb-4">Today's Logs</h2>
           {loading ? (
             <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="glass-card p-4 animate-pulse-soft">
-                  <div className="h-4 w-3/4 bg-lavender-light rounded mb-2" />
-                  <div className="h-3 w-1/2 bg-lavender-light rounded" />
-                </div>
-              ))}
+              {[1, 2, 3].map(i => <div key={i} className="h-24 glass-card animate-pulse" />)}
             </div>
           ) : meals.length === 0 ? (
-            <div className="glass-card p-8 text-center">
-              <span className="text-4xl mb-3 block">🍽️</span>
-              <p className="text-text-muted">No meals logged yet. Start tracking above!</p>
+            <div className="glass-card p-12 text-center">
+              <p className="text-text-muted font-bold">No meals logged today. Better get eating! 🥯</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {meals.map((meal) => (
-                <div key={meal.id} className="glass-card p-4 flex items-center gap-4 animate-fade-in" style={{ opacity: 0 }}>
-                  <span className="text-2xl">
-                    {mealTypes.find((t) => t.value === meal.mealType)?.icon || '🍽️'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-text truncate">{meal.description}</p>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      {meal.mealType} · {new Date(meal.loggedAt).toLocaleString()}
+                <div key={meal.id} className="glass-card p-5 group flex items-start gap-4 animate-fade-in">
+                  <div className="w-12 h-12 rounded-2xl bg-lavender-light/30 flex items-center justify-center text-2xl">
+                    {meal.mealType === 'breakfast' ? '🥐' : meal.mealType === 'lunch' ? '🥗' : meal.mealType === 'dinner' ? '🥩' : '🍎'}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-black text-text leading-tight">{meal.description}</p>
+                      <button 
+                        onClick={() => handleDeleteMeal(meal.id)}
+                        className="text-text-light hover:text-rose-dark transition-colors text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-2">
+                       <MacroBadge label="kcal" value={meal.calories} color="lavender" />
+                       <MacroBadge label="Prot" value={`${meal.protein}g`} color="rose" />
+                       <MacroBadge label="Carb" value={`${meal.carbs}g`} color="sky" />
+                       <MacroBadge label="Fat" value={`${meal.fat}g`} color="peach" />
+                    </div>
+                    <p className="text-[10px] font-bold text-text-muted uppercase mt-3 tracking-tighter">
+                      {new Date(meal.loggedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  {meal.calories && (
-                    <div className="flex gap-3 text-xs text-text-muted">
-                      <span className="text-peach-dark font-semibold">{meal.calories} cal</span>
-                      <span>P:{meal.protein}g</span>
-                      <span>C:{meal.carbs}g</span>
-                      <span>F:{meal.fat}g</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => handleDelete(meal.id)}
-                    className="text-text-light hover:text-rose-dark transition-colors text-sm p-1"
-                    title="Delete"
-                  >
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>
@@ -215,5 +166,19 @@ export default function MealsPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function MacroBadge({ label, value, color }) {
+  const colors = {
+    rose: 'bg-rose-light/40 text-rose-dark',
+    lavender: 'bg-lavender-light/40 text-lavender-dark',
+    sky: 'bg-sky-light/40 text-sky-dark',
+    peach: 'bg-peach-light/40 text-peach-dark',
+  };
+  return (
+    <div className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-tighter ${colors[color]}`}>
+      {value} <span className="opacity-50">{label}</span>
+    </div>
   );
 }

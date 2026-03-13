@@ -26,9 +26,9 @@ function RegisterForm() {
 
     setLoading(true);
     try {
-      await register(email, password, name);
+      await register({ email, password, name });
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

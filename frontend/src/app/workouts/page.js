@@ -1,13 +1,13 @@
 'use client';
 export const dynamic = 'force-dynamic';
 
-// ─── Workouts Page (Frontend-only) ──────────────────────────
-// Workout logging stored in localStorage
+// ─── Workouts Page (Unified API) ────────────────────────────
+// Workout logging with server-side DB persistence
 
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import WorkoutTimer from '@/components/WorkoutTimer';
-import { getWorkouts, addWorkout, deleteWorkout } from '@/lib/store';
+import { api } from '@/lib/api';
 
 const workoutTypes = [
   { value: 'strength', label: 'Strength', icon: '🏋️' },
@@ -29,16 +29,26 @@ export default function WorkoutsPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setWorkouts(getWorkouts());
-    setLoading(false);
+    fetchWorkouts();
   }, []);
 
-  const handleSubmit = (e) => {
+  const fetchWorkouts = async () => {
+    try {
+      const data = await api.getWorkouts();
+      setWorkouts(data.workouts);
+    } catch (err) {
+      console.error('Failed to fetch workouts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !duration) return;
     setSaving(true);
     try {
-      addWorkout({
+      await api.logWorkout({
         name,
         type,
         duration: parseInt(duration),
@@ -49,17 +59,12 @@ export default function WorkoutsPage() {
       setDuration('30');
       setCalories('');
       setNotes('');
-      setWorkouts(getWorkouts());
+      fetchWorkouts();
     } catch (err) {
       console.error('Failed to log workout:', err);
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleDelete = (id) => {
-    deleteWorkout(id);
-    setWorkouts(getWorkouts());
   };
 
   const handleTimerFinish = (seconds) => {
@@ -71,16 +76,15 @@ export default function WorkoutsPage() {
       <div className="max-w-4xl mx-auto">
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-text">Workouts</h1>
-            <p className="text-text-muted text-sm mt-1">Log and track your exercise sessions</p>
+            <h1 className="text-2xl font-bold text-text tracking-tight">Workouts</h1>
+            <p className="text-text-muted text-sm mt-1">Consistency is the bridge between goals and accomplishment.</p>
           </div>
         </div>
 
         {/* Log Workout Form */}
-        <div className="glass-card p-6 mb-8 animate-fade-in" style={{ opacity: 0 }}>
+        <div className="glass-card p-6 mb-8 border-t-4 border-lavender animate-fade-in" style={{ opacity: 0 }}>
           <h2 className="text-lg font-semibold text-text mb-4">💪 Log a Workout</h2>
           <form onSubmit={handleSubmit}>
-            {/* Type Selector */}
             <div className="flex flex-wrap gap-2 mb-4">
               {workoutTypes.map((t) => (
                 <button
@@ -101,18 +105,18 @@ export default function WorkoutsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-1.5">Workout Name</label>
+                <label className="block text-sm font-medium text-text-muted mb-1.5 uppercase tracking-tighter">Workout Name</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="input"
-                  placeholder="e.g., Morning Run"
+                  placeholder="e.g. Morning Run"
                   required
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-1.5">Duration (min)</label>
+                <label className="block text-sm font-medium text-text-muted mb-1.5 uppercase tracking-tighter">Duration (min)</label>
                 <input
                   type="number"
                   value={duration}
@@ -126,17 +130,17 @@ export default function WorkoutsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-1.5">Calories Burned (optional)</label>
+                <label className="block text-sm font-medium text-text-muted mb-1.5 uppercase tracking-tighter">Calories Burned (optional)</label>
                 <input
                   type="number"
                   value={calories}
                   onChange={(e) => setCalories(e.target.value)}
                   className="input"
-                  placeholder="e.g., 350"
+                  placeholder="e.g. 350"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-text-muted mb-1.5">Notes (optional)</label>
+                <label className="block text-sm font-medium text-text-muted mb-1.5 uppercase tracking-tighter">Notes (optional)</label>
                 <input
                   type="text"
                   value={notes}
@@ -147,7 +151,7 @@ export default function WorkoutsPage() {
               </div>
             </div>
 
-            <button type="submit" disabled={saving || !name.trim()} className="btn-primary">
+            <button type="submit" disabled={saving || !name.trim()} className="btn-primary w-full py-3">
               {saving ? '⏳ Saving...' : '✅ Log Workout'}
             </button>
           </form>
@@ -155,44 +159,31 @@ export default function WorkoutsPage() {
 
         {/* Workout History */}
         <div>
-          <h2 className="text-lg font-semibold text-text mb-4">Recent Workouts</h2>
+          <h2 className="text-lg font-semibold text-text mb-4 tracking-tight">Recent Activity</h2>
           {loading ? (
             <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="glass-card p-4 animate-pulse-soft">
-                  <div className="h-4 w-3/4 bg-lavender-light rounded mb-2" />
-                  <div className="h-3 w-1/2 bg-lavender-light rounded" />
-                </div>
-              ))}
+              {[1, 2, 3].map(i => <div key={i} className="h-20 glass-card animate-pulse" />)}
             </div>
           ) : workouts.length === 0 ? (
-            <div className="glass-card p-8 text-center">
-              <span className="text-4xl mb-3 block">💪</span>
-              <p className="text-text-muted">No workouts logged yet. Start tracking above!</p>
+            <div className="glass-card p-12 text-center text-text-muted font-bold">
+              No workouts logged yet. Time to move! 🏃
             </div>
           ) : (
             <div className="space-y-3">
               {workouts.map((w) => (
-                <div key={w.id} className="glass-card p-4 flex items-center gap-4 animate-fade-in" style={{ opacity: 0 }}>
-                  <span className="text-2xl">
+                <div key={w.id} className="glass-card p-4 flex items-center gap-4 animate-fade-in group hover:translate-x-1 transition-all">
+                  <span className="text-2xl w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
                     {workoutTypes.find((t) => t.value === w.type)?.icon || '🎯'}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-text truncate">{w.name}</p>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      {w.type} · {w.duration} min · {new Date(w.loggedAt).toLocaleString()}
+                    <p className="font-bold text-text truncate">{w.name}</p>
+                    <p className="text-[10px] text-text-muted font-bold uppercase tracking-widest mt-0.5">
+                      {w.type} · {w.duration} min · {new Date(w.loggedAt).toLocaleDateString()}
                     </p>
                   </div>
                   {w.calories && (
-                    <span className="text-xs text-peach-dark font-semibold">{w.calories} cal</span>
+                    <span className="text-xs text-rose-dark font-black px-2 py-1 bg-rose-light/20 rounded-lg">{w.calories} kcal</span>
                   )}
-                  <button
-                    onClick={() => handleDelete(w.id)}
-                    className="text-text-light hover:text-rose-dark transition-colors text-sm p-1"
-                    title="Delete"
-                  >
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>

@@ -1,11 +1,11 @@
 'use client';
 
-// ─── Auth Context (Frontend-Only) ───────────────────────────
-// No server, no JWT. Profile stored in localStorage.
+// ─── Auth Context (Unified Next.js App) ──────────────────────
+// Uses local API routes and JWT storage in localStorage
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getProfile, updateProfile } from './store';
+import { api } from '@/lib/api';
 
 const AuthContext = createContext(null);
 
@@ -15,35 +15,47 @@ export function AuthProvider({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    const profile = getProfile();
-    if (profile.name) {
-      setUser(profile);
-    }
-    setLoading(false);
+    const initAuth = async () => {
+      const token = localStorage.getItem('fitspace_token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const { user } = await api.getMe();
+        setUser(user);
+      } catch (err) {
+        console.error('Auth init failed:', err);
+        localStorage.removeItem('fitspace_token');
+      } finally {
+        setLoading(false);
+      }
+    };
+    initAuth();
   }, []);
 
-  const login = async (email, password) => {
-    // Frontend-only: just set a profile
-    const profile = updateProfile({ name: email.split('@')[0], email });
-    setUser(profile);
+  const login = async (credentials) => {
+    const { token, user } = await api.login(credentials);
+    localStorage.setItem('fitspace_token', token);
+    setUser(user);
     router.push('/dashboard');
   };
 
-  const register = async (email, password, name) => {
-    const profile = updateProfile({ name, email });
-    setUser(profile);
+  const register = async (data) => {
+    const { token, user } = await api.register(data);
+    localStorage.setItem('fitspace_token', token);
+    setUser(user);
     router.push('/dashboard');
-  };
-
-  const updateUserInfo = (updates) => {
-    const updated = updateProfile(updates);
-    setUser(updated);
   };
 
   const logout = () => {
-    localStorage.removeItem('fitspace_profile');
+    localStorage.removeItem('fitspace_token');
     setUser(null);
     router.push('/login');
+  };
+
+  const updateUserInfo = (updatedUser) => {
+    setUser((prev) => ({ ...prev, ...updatedUser }));
   };
 
   return (
@@ -56,12 +68,11 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {
-    // Return safe default during SSR/prerendering
+    // Return safe default during SSR
     return { user: null, loading: true, login: () => {}, register: () => {}, logout: () => {}, updateUserInfo: () => {} };
   }
   return ctx;
 }
-
 
 // ─── Protected Route Wrapper ────────────────────────────────
 export function ProtectedRoute({ children }) {
@@ -76,12 +87,11 @@ export function ProtectedRoute({ children }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse-soft text-4xl">🏋️</div>
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="animate-pulse-soft text-lavender-dark font-bold">FitSpace...</div>
       </div>
     );
   }
 
-  if (!user) return null;
-  return children;
+  return user ? children : null;
 }

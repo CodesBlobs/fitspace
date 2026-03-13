@@ -1,11 +1,11 @@
 'use client';
+export const dynamic = 'force-dynamic';
 
-// ─── AI Insight Card (Frontend-only) ────────────────────────
-// Calls OpenAI directly from the browser
+// ─── AI Insight Card (Unified API) ──────────────────────────
+// Calls the local Next.js AI route handler
 
 import { useState, useEffect } from 'react';
-import { getDailyInsight } from '@/lib/ai';
-import { getDashboardSummary } from '@/lib/store';
+import { api } from '@/lib/api';
 
 export default function AIInsightCard() {
   const [insight, setInsight] = useState(null);
@@ -18,16 +18,11 @@ export default function AIInsightCard() {
   const fetchInsight = async () => {
     try {
       setLoading(true);
-      const summary = getDashboardSummary();
-      const userData = {
-        mealsLoggedThisWeek: summary.mealsLogged,
-        workoutsThisWeek: summary.workouts.count,
-        recentMoods: summary.mood ? [summary.mood.mood] : [],
-      };
-      const result = await getDailyInsight(userData);
-      setInsight(result);
+      const data = await api.getInsight();
+      setInsight(data.insight);
     } catch (err) {
       console.error('Failed to fetch insight:', err);
+      // Fallback in case of server error
       setInsight({
         greeting: 'Welcome back! 💪',
         insight: 'Keep tracking your progress — consistency is key!',
