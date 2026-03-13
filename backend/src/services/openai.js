@@ -96,22 +96,29 @@ async function getDailyInsight(userData) {
     return getMockDailyInsight();
   }
 
+  // Inject a "theme of the day" for variety
+  const themes = ['discipline', 'recovery', 'growth', 'consistency', 'mindset', 'nutrition'];
+  const dailyTheme = themes[new Date().getDate() % themes.length];
+
   try {
     const response = await openai.chat.completions.create({
       model: aiModel,
       messages: [
         {
           role: 'system',
-          content: `You are a motivational health coach. Based on the user's recent activity data, provide a personalized daily insight. Return a JSON object:
-            - greeting (string, personalized greeting)
-            - insight (string, 2-3 sentence personalized insight)
-            - motivation (string, motivational quote or tip)
-            - focusArea (string, what to focus on today)
-            Return ONLY valid JSON, no markdown.`,
+          content: `You are a motivational health coach. Provide a personalized daily insight based on user data.
+            Focus theme for today: ${dailyTheme}.
+            Return a JSON object:
+            - greeting (string, friendly)
+            - insight (string, 2-3 sentences of data-driven advice)
+            - motivation (string, a UNIQUE quote or tip related to ${dailyTheme})
+            - focusArea (string, specific focus today)
+            Avoid generic platitudes. Use the user's weekly counts to be specific.
+            Return ONLY valid JSON.`,
         },
         {
           role: 'user',
-          content: `Here's my recent data: ${JSON.stringify(userData)}`,
+          content: `Data: ${JSON.stringify(userData)}`,
         },
       ],
       temperature: 0.8,
@@ -125,6 +132,7 @@ async function getDailyInsight(userData) {
     return getMockDailyInsight();
   }
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // Mock Responses (when OpenAI is not configured)
@@ -188,14 +196,27 @@ function getMockDailyInsight() {
       focusArea: 'Focus on getting quality sleep tonight — it\'s when your body recovers.',
     },
     {
+      greeting: 'Keep it up! 🌊',
+      insight: 'Small, sustainable changes lead to lifelong habits. You are building a better version of yourself every day.',
+      motivation: '"Action is the foundational key to all success." — Pablo Picasso',
+      focusArea: 'Take a 10-minute walk after your largest meal to aid digestion.',
+    },
+    {
       greeting: 'Rise and shine! 🌅',
       insight: 'Progress isn\'t always visible on the scale. Celebrate how you feel — more energetic, stronger, happier.',
       motivation: '"Health is not about the weight you lose, but about the life you gain."',
       focusArea: 'Try adding an extra serving of vegetables to your meals today.',
     },
+    {
+      greeting: 'Energy check! ⚡',
+      insight: 'Listen to your body. Sometimes progress means pushing hard, and sometimes it means active recovery.',
+      motivation: '"Rest when you\'re weary. Refresh and renew yourself." — A.P.J. Abdul Kalam',
+      focusArea: 'Focus on mobility today. Spend 5 minutes stretching.',
+    },
   ];
 
   return insights[Math.floor(Math.random() * insights.length)];
 }
+
 
 module.exports = { analyzeMeal, suggestWorkout, getDailyInsight };

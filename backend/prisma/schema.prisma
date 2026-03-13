@@ -19,7 +19,20 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Goals
+  dailyWaterGoal    Float @default(2500) // ml
+  dailyCaloriesGoal Float @default(2000) // kcal
+  dailySleepGoal    Float @default(8)    // hours
+  dailyWorkoutGoal  Int   @default(30)   // minutes
+
+  // Profile (optional for AI context)
+  weight Float? // kg
+  height Float? // cm
+  avatar String? // emoji or icon name
+
   meals     Meal[]
+
+
   workouts  Workout[]
   waterLogs WaterLog[]
   sleepLogs SleepLog[]

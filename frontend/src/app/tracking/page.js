@@ -36,12 +36,23 @@ export default function TrackingPage() {
   const [moodLogs, setMoodLogs] = useState([]);
 
   const [loading, setLoading] = useState(true);
+  const [waterGoal, setWaterGoal] = useState(2500);
 
   useEffect(() => {
-    Promise.all([fetchWater(), fetchSleep(), fetchMood()]).then(() => setLoading(false));
+    Promise.all([fetchWater(), fetchSleep(), fetchMood(), fetchProfile()]).then(() => setLoading(false));
   }, []);
 
+  const fetchProfile = async () => {
+    try {
+      const { data } = await api.get('/user/profile');
+      if (data.user.dailyWaterGoal) {
+        setWaterGoal(data.user.dailyWaterGoal);
+      }
+    } catch (err) { console.error(err); }
+  };
+
   // ─── Water Handlers ────────────────────────────────────────
+
   const fetchWater = async () => {
     try {
       const { data } = await api.get('/tracking/water');
@@ -101,8 +112,8 @@ export default function TrackingPage() {
     { id: 'mood', label: 'Mood', icon: '😊' },
   ];
 
-  const waterGoal = 2500; // ml
   const waterPercentage = Math.min(100, Math.round((waterTotal / waterGoal) * 100));
+
 
   return (
     <AppShell>

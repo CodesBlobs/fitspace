@@ -7,11 +7,39 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate } = require('../middleware/auth');
 const { analyzeMeal, suggestWorkout, getDailyInsight } = require('../services/openai');
+const { transcribeAudio } = require('../services/elevenlabs');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
+
+const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
 router.use(authenticate);
+
+// ─── Voice Transcription ─────────────────────────────────────
+router.post('/transcribe', upload.single('audio'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No audio file provided' });
+    }
+
+    const text = await transcribeAudio(req.file.path);
+
+    // Clean up file
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Error deleting temp file:', err);
+    });
+
+    res.json({ text });
+  } catch (err) {
+    console.error('Transcription route error:', err);
+    res.status(500).json({ error: 'Failed to transcribe audio' });
+  }
+});
+
 
 // ─── Analyze Meal ───────────────────────────────────────────
 router.post('/analyze-meal', async (req, res) => {

@@ -42,7 +42,14 @@ router.get('/summary', async (req, res) => {
       }),
     ]);
 
-    // Aggregate
+    // Aggregates and User Goals
+    const [user] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: req.userId },
+        select: { dailyWaterGoal: true, dailyCaloriesGoal: true, dailySleepGoal: true, dailyWorkoutGoal: true },
+      }),
+    ]);
+
     const totalCalories = todayMeals.reduce((sum, m) => sum + (m.calories || 0), 0);
     const totalProtein = todayMeals.reduce((sum, m) => sum + (m.protein || 0), 0);
     const totalCarbs = todayMeals.reduce((sum, m) => sum + (m.carbs || 0), 0);
@@ -53,14 +60,29 @@ router.get('/summary', async (req, res) => {
 
     res.json({
       summary: {
-        calories: { total: totalCalories, protein: totalProtein, carbs: totalCarbs, fat: totalFat },
-        workouts: { count: todayWorkouts.length, minutes: totalWorkoutMinutes, calories: totalWorkoutCalories },
-        water: { total: totalWater, goal: 2500 }, // 2.5L daily goal
-        sleep: latestSleep ? { hours: latestSleep.hours, quality: latestSleep.quality } : null,
+        calories: { 
+          total: totalCalories, 
+          protein: totalProtein, 
+          carbs: totalCarbs, 
+          fat: totalFat,
+          goal: user?.dailyCaloriesGoal || 2000
+        },
+        workouts: { 
+          count: todayWorkouts.length, 
+          minutes: totalWorkoutMinutes, 
+          calories: totalWorkoutCalories,
+          goal: user?.dailyWorkoutGoal || 30
+        },
+        water: { 
+          total: totalWater, 
+          goal: user?.dailyWaterGoal || 2500 
+        },
+        sleep: latestSleep ? { hours: latestSleep.hours, quality: latestSleep.quality, goal: user?.dailySleepGoal || 8 } : null,
         mood: latestMood ? { mood: latestMood.mood, energy: latestMood.energy } : null,
         mealsLogged: todayMeals.length,
       },
     });
+
   } catch (err) {
     console.error('Dashboard summary error:', err);
     res.status(500).json({ error: 'Failed to fetch dashboard summary' });

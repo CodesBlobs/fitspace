@@ -34,10 +34,16 @@ export function AuthProvider({ children }) {
       router.push('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
-      // alert or set error state if handled higher up
       throw error;
     }
   };
+
+  const updateUserInfo = (updatedUser) => {
+    const newUser = { ...user, ...updatedUser };
+    localStorage.setItem('fitspace_user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
 
   const register = async (email, password, name) => {
     const { data } = await api.post('/auth/register', { email, password, name });
@@ -55,7 +61,8 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUserInfo }}>
+
       {children}
     </AuthContext.Provider>
   );

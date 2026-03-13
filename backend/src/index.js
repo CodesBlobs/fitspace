@@ -11,12 +11,28 @@ const workoutRoutes = require('./routes/workouts');
 const trackingRoutes = require('./routes/tracking');
 const aiRoutes = require('./routes/ai');
 const dashboardRoutes = require('./routes/dashboard');
+const userRoutes = require('./routes/user');
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ─── Middleware ─────────────────────────────────────────────
-app.use(cors({ origin: true, credentials: true }));
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.fitspace.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Fallback to true for local dev, but restrict in production
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
 
 // ─── Health Check ───────────────────────────────────────────
@@ -31,6 +47,8 @@ app.use('/api/workouts', workoutRoutes);
 app.use('/api/tracking', trackingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/user', userRoutes);
+
 
 // ─── Global Error Handler ───────────────────────────────────
 app.use((err, req, res, next) => {

@@ -12,7 +12,11 @@ const navItems = [
   { href: '/meals', label: 'Meals', icon: '🍽️' },
   { href: '/workouts', label: 'Workouts', icon: '💪' },
   { href: '/tracking', label: 'Tracking', icon: '💧' },
+  { href: '/log', label: 'Quick Log', icon: '➕', primary: true },
+  { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
+
+
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -49,16 +53,17 @@ export default function Sidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-1 text-sm font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-lavender-dark/20 text-white shadow-lg shadow-lavender-dark/10'
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  ? (item.primary ? 'bg-rose text-white shadow-lg' : 'bg-lavender-dark/20 text-white shadow-lg shadow-lavender-dark/10')
+                  : (item.primary ? 'bg-rose/10 text-rose hover:bg-rose/20' : 'text-gray-400 hover:text-white hover:bg-white/5')
               }`}
             >
               <span className="text-lg">{item.icon}</span>
               <span>{item.label}</span>
-              {isActive && (
+              {isActive && !item.primary && (
                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-lavender-dark" />
               )}
             </Link>
+
           );
         })}
       </nav>
@@ -67,11 +72,12 @@ export default function Sidebar() {
       {user && (
         <div className="p-4 mx-3 mb-4 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white" style={{
+            <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white border border-white/10 shadow-inner" style={{
               background: 'linear-gradient(135deg, #a78bfa, #60b5f6)',
             }}>
-              {user.name?.charAt(0)?.toUpperCase() || '?'}
+              {user.avatar || user.name?.charAt(0)?.toUpperCase() || '?'}
             </div>
+
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.name}</p>
               <p className="text-xs text-gray-400 truncate">{user.email}</p>

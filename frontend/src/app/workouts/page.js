@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import api from '@/lib/api';
+import WorkoutTimer from '@/components/WorkoutTimer';
+
 
 const workoutTypes = [
   { value: 'cardio', label: 'Cardio', icon: '🏃' },
@@ -277,6 +279,8 @@ export default function WorkoutsPage() {
           )}
         </div>
       </div>
+      <WorkoutTimer onFinish={(mins) => setDuration(String(mins))} />
     </AppShell>
+
   );
 }

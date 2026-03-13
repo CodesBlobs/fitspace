@@ -81,9 +81,10 @@ export default function DashboardPage() {
                 icon="💧"
                 label="Water Intake"
                 value={`${((summary?.water?.total || 0) / 1000).toFixed(1)}L`}
-                subtitle={`Goal: ${(summary?.water?.goal / 1000).toFixed(1)}L · ${Math.min(100, Math.round(((summary?.water?.total || 0) / summary?.water?.goal) * 100))}%`}
+                subtitle={`Goal: ${((summary?.water?.goal || 2500) / 1000).toFixed(1)}L · ${Math.min(100, Math.round(((summary?.water?.total || 0) / (summary?.water?.goal || 2500)) * 100))}%`}
                 color="sky"
               />
+
               <StatCard
                 icon="😴"
                 label="Last Night Sleep"
