@@ -9,11 +9,15 @@ export const metadata = {
   keywords: 'fitness, nutrition, workout, health, AI, tracker',
 };
 
+import { AuthProvider } from '@/lib/auth';
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
