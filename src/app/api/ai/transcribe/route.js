@@ -7,22 +7,9 @@ import { tmpdir } from 'os';
 
 export async function POST(req) {
   try {
-    const userId = getUserIdFromRequest(req);
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const formData = await req.formData();
-    const audioFile = formData.get('audio');
-
-    if (!audioFile) {
-      return NextResponse.json({ error: 'No audio file provided' }, { status: 400 });
-    }
-
-    const buffer = Buffer.from(await audioFile.arrayBuffer());
-    const tempPath = path.join(tmpdir(), `upload-${Date.now()}.webm`);
-    
-    fs.writeFileSync(tempPath, buffer);
-
+    console.log(`Transcribing audio for user ${userId}...`);
     const text = await transcribeAudio(tempPath);
+    console.log(`Transcription complete for user ${userId}: "${text.substring(0, 30)}..."`);
 
     // Clean up file
     fs.unlink(tempPath, (err) => {

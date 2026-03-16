@@ -53,6 +53,7 @@ export async function POST(req) {
       data: { userId, amount: parseFloat(amount) },
     });
 
+    console.log(`Water logged: ${amount}ml for user ${userId}`);
     return NextResponse.json({ log }, { status: 201 });
   } catch (err) {
     console.error('Log water error:', err);

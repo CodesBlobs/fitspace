@@ -55,6 +55,7 @@ export async function POST(req) {
       },
     });
 
+    console.log(`Meal logged successfully: ${meal.id} for user ${userId}`);
     return NextResponse.json({ meal }, { status: 201 });
   } catch (err) {
     console.error('Create meal error:', err);

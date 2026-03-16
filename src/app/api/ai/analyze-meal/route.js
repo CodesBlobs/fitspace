@@ -12,7 +12,9 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Meal description is required' }, { status: 400 });
     }
 
+    console.log(`Analyzing meal for user ${userId}: ${description.substring(0, 50)}...`);
     const analysis = await analyzeMeal(description);
+    console.log(`Meal analysis complete for user ${userId}`);
     return NextResponse.json({ analysis });
   } catch (err) {
     console.error('AI analyze meal error:', err);

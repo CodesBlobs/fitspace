@@ -8,7 +8,9 @@ export async function POST(req) {
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { preferences } = await req.json();
-    const suggestion = await suggestWorkout(preferences || {});
+    console.log(`Suggesting workout for user ${userId} with preferences:`, preferences);
+    const suggestion = await suggestWorkout(preferences);
+    console.log(`Workout suggestion complete for user ${userId}`);
     return NextResponse.json({ suggestion });
   } catch (err) {
     console.error('AI suggest workout error:', err);

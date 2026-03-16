@@ -39,6 +39,7 @@ export async function POST(req) {
       },
     });
 
+    console.log(`Mood logged: ${mood} (energy ${energy}) for user ${userId}`);
     return NextResponse.json({ log }, { status: 201 });
   } catch (err) {
     console.error('Log mood error:', err);

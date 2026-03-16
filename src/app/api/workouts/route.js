@@ -52,6 +52,7 @@ export async function POST(req) {
       },
     });
 
+    console.log(`Workout logged successfully: ${workout.id} for user ${userId}`);
     return NextResponse.json({ workout }, { status: 201 });
   } catch (err) {
     console.error('Create workout error:', err);

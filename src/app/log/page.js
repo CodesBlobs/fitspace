@@ -92,7 +92,14 @@ export default function UnifiedLogPage() {
       const analysis = await api.post('/ai/analyze-meal', { description: mealDesc });
       const { calories, protein, carbs, fat } = analysis.data;
       // Then save
-      await api.post('/meals', { name: mealDesc, calories, protein, carbs, fat });
+      await api.post('/meals', { 
+        description: mealDesc, 
+        mealType: 'lunch', // Default for quick log
+        calories, 
+        protein, 
+        carbs, 
+        fat 
+      });
       setMealDesc('');
       showSuccess('Meal logged! 🍽️');
     } catch (err) { console.error(err); }

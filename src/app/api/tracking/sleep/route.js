@@ -39,6 +39,7 @@ export async function POST(req) {
       },
     });
 
+    console.log(`Sleep logged: ${hours}h with quality ${quality} for user ${userId}`);
     return NextResponse.json({ log }, { status: 201 });
   } catch (err) {
     console.error('Log sleep error:', err);

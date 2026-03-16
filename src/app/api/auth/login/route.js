@@ -7,17 +7,17 @@ export async function POST(req) {
   try {
     const { email, password } = await req.json();
 
-    if (!email || !password) {
-      return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
-    }
+    const normalizedEmail = email.trim().toLowerCase();
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
+      console.log('Login failed: User not found', normalizedEmail);
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
+      console.log('Login failed: Invalid password', normalizedEmail);
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 

@@ -26,6 +26,7 @@ export async function PUT(req) {
       },
     });
 
+    console.log(`Settings updated for user ${userId}`);
     return NextResponse.json({
       message: 'Settings updated successfully',
       user: {
