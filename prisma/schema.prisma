@@ -37,6 +37,7 @@ model User {
   waterLogs WaterLog[]
   sleepLogs SleepLog[]
   moodLogs  MoodLog[]
+  gratitudeEntries GratitudeEntry[]
 }
 
 // ─── Meal ──────────────────────────────────────────────────
@@ -100,6 +101,16 @@ model MoodLog {
   mood      String   // happy, calm, stressed, tired, energetic, sad
   energy    Int      // 1-5
   notes     String?
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+}
+
+// ─── Gratitude ─────────────────────────────────────────────
+model GratitudeEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  content   String
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
 }

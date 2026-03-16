@@ -12,6 +12,7 @@ const navItems = [
   { href: '/meals', label: 'Meals', icon: '🍽️' },
   { href: '/workouts', label: 'Workouts', icon: '💪' },
   { href: '/tracking', label: 'Tracking', icon: '💧' },
+  { href: '/wellness', label: 'Wellness', icon: '🌿' },
   { href: '/log', label: 'Quick Log', icon: '➕', primary: true },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
@@ -26,19 +27,18 @@ export default function Sidebar() {
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col" style={{
       background: 'linear-gradient(180deg, #1e1b2e 0%, #2d2745 50%, #1e1b2e 100%)',
     }}>
-      {/* Logo */}
       <div className="p-6 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 relative">
+        <div className="flex items-center gap-3 group transition-all duration-300">
+          <div className="w-12 h-12 relative">
             <img 
-              src="/logo.png" 
-              alt="FitSpace Logo" 
-              className="w-full h-full object-contain filter drop-shadow-sm transition-transform group-hover:scale-105"
+              src="/logo-premium.png" 
+              alt="FitSpace Premium Logo" 
+              className="w-full h-full object-contain filter drop-shadow-lg transition-transform duration-500 group-hover:scale-110"
             />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">FitSpace</h1>
-            <p className="text-xs text-lavender-dark opacity-80">AI Fitness Assistant</p>
+            <h1 className="text-xl font-bold text-white tracking-tight group-hover:text-lavender transition-colors">FitSpace</h1>
+            <p className="text-[10px] text-lavender uppercase tracking-[0.2em] opacity-60 font-medium">Holistic Wellness</p>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import AppShell from '@/components/AppShell';
 import StatCard from '@/components/StatCard';
 import AIInsightCard from '@/components/AIInsightCard';
+import WholesomeCard from '@/components/WholesomeCard';
 import { BarChart, LineChart } from '@/components/Chart';
 import api from '@/lib/api';
 
@@ -150,8 +151,11 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* AI Insight */}
-            <AIInsightCard />
+            {/* AI Insight & Wholesome Corner */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
+              <AIInsightCard />
+              <WholesomeCard />
+            </div>
           </>
         )}
       </div>
