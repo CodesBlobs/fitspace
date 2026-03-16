@@ -55,11 +55,14 @@ export default function UnifiedLogPage() {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
           
-          const text = response.data.text;
+          const { text, rawText } = response.data;
+          console.log('Raw Transcription:', rawText);
+          console.log('Cleaned Transcription:', text);
+          
           if (activeTab === 'meal') setMealDesc(text);
           else if (activeTab === 'workout') setWorkoutDesc(text);
           
-          showSuccess('Voice transcribed! ✨');
+          showSuccess('AI refined your voice! ✨');
         } catch (err) {
           console.error('Transcription failed:', err);
         } finally {

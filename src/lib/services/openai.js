@@ -133,6 +133,40 @@ export async function getDailyInsight(userData) {
   }
 }
 
+// ─── Refine Transcription (Clean-up) ────────────────────────
+export async function refineTranscription(rawText) {
+  if (!isConfigured) {
+    return { cleanedText: rawText.replace(/um|uh|like|i think/gi, '').trim() };
+  }
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: aiModel,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an AI assistant helping to clean up raw voice transcriptions for a fitness app.
+            Your goal is to:
+            1. Remove filler words (uh, um, like, you know).
+            2. Remove stuttering or repeated words.
+            3. Fix minor grammatical errors while keeping the user's original meaning.
+            4. Return a concise, natural-sounding description of the meal or workout.
+            Return ONLY a JSON object with a 'cleanedText' field.`,
+        },
+        { role: 'user', content: `Clean up this transcription: "${rawText}"` },
+      ],
+      temperature: 0.1,
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0].message.content;
+    return JSON.parse(content);
+  } catch (err) {
+    console.error('OpenAI transcription refinement error:', err.message);
+    return { cleanedText: rawText };
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════
 // Mock Responses (when OpenAI is not configured)
