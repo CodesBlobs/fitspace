@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+/* ─── FitSpace Pastel Design System ──────────────────────── */
+
+@theme inline {
+  /* Pastel palette */
+  --color-mint: #b8f0d8;
+  --color-mint-light: #dff8ec;
+  --color-mint-dark: #68d4a0;
+  --color-lavender: #d4c5f9;
+  --color-lavender-light: #ede6fd;
+  --color-lavender-dark: #a78bfa;
+  --color-peach: #fcd5c0;
+  --color-peach-light: #fde8da;
+  --color-peach-dark: #f9a870;
+  --color-sky: #bae6fd;
+  --color-sky-light: #e0f2fe;
+  --color-sky-dark: #60b5f6;
+  --color-rose: #fecdd3;
+  --color-rose-light: #ffe4e6;
+  --color-rose-dark: #fb7185;
+  --color-sunshine: #fef08a;
+  --color-sunshine-light: #fef9c3;
+  --color-sunshine-dark: #eab308;
+
+  /* Neutrals */
+  --color-bg: #faf9f7;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #f5f4f2;
+  --color-text: #1e1b2e;
+  --color-text-muted: #6b7280;
+  --color-text-light: #9ca3af;
+  --color-border: #e5e7eb;
+
+  /* Sidebar */
+  --color-sidebar-bg: #1e1b2e;
+  --color-sidebar-text: #e2dff0;
+  --color-sidebar-active: #a78bfa;
+
+  /* Fonts */
+  --font-sans: 'Inter', 'Outfit', system-ui, sans-serif;
+}
+
+/* ─── Base ───────────────────────────────────────────────── */
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+
+/* ─── Glassmorphism Card ─────────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 1rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* ─── Gradient Buttons ───────────────────────────────────── */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-lavender-dark) 0%, var(--color-sky-dark) 100%);
+  color: white;
+  font-weight: 600;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(167, 139, 250, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 500;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background: var(--color-surface-subtle);
+  border-color: var(--color-lavender-dark);
+}
+
+/* ─── Form Inputs ────────────────────────────────────────── */
+.input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.input:focus {
+  border-color: var(--color-lavender-dark);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+}
+
+.input::placeholder {
+  color: var(--color-text-light);
+}
+
+/* ─── Select ─────────────────────────────────────────────── */
+.select {
+  appearance: none;
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 1rem;
+  border-radius: 0.75rem;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%236b7280' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E") no-repeat right 1rem center;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.select:focus {
+  border-color: var(--color-lavender-dark);
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.15);
+}
+
+/* ─── Animations ─────────────────────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(5deg); }
+  50% { transform: scale(1) rotate(0deg); }
+  75% { transform: scale(1.1) rotate(-5deg); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.7s ease-out forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Staggered fade-in for card grids */
+.animate-fade-in:nth-child(1) { animation-delay: 0s; }
+.animate-fade-in:nth-child(2) { animation-delay: 0.1s; }
+.animate-fade-in:nth-child(3) { animation-delay: 0.15s; }
+.animate-fade-in:nth-child(4) { animation-delay: 0.2s; }
+.animate-fade-in:nth-child(5) { animation-delay: 0.25s; }
+.animate-fade-in:nth-child(6) { animation-delay: 0.3s; }
+
+/* ─── Scrollbar ──────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-light);
+}
