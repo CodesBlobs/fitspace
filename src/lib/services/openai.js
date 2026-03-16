@@ -34,6 +34,7 @@ export async function analyzeMeal(description) {
             - carbs (number, grams)
             - fat (number, grams)
             - fiber (number, grams)
+            - goodParts (string, 1-2 sentences highlighting the positive/nutritional benefits of this specific food)
             - summary (string, brief 1-2 sentence analysis)
             - healthTips (array of 2-3 short tips)
             Return ONLY valid JSON, no markdown.`,
@@ -167,6 +168,40 @@ export async function refineTranscription(rawText) {
   }
 }
 
+// ─── Generate Meal Session Summary ──────────────────────────
+export async function generateMealSessionSummary(meals) {
+  if (!isConfigured) {
+    return { 
+      overallSummary: "Great job logging your meals! You had a balanced intake of protein and fiber today. Keep up the good work!" 
+    };
+  }
+
+  try {
+    const mealDescriptions = meals.map(m => `- ${m.description} (${m.calories} kcal)`).join('\n');
+    const response = await openai.chat.completions.create({
+      model: aiModel,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a supportive nutrition coach. Look at the list of meals provided for a single session/day and provide a cohesive 2-3 sentence overall summary.
+            Highlight any patterns or positive choices.
+            Return a JSON object with a single field: 'overallSummary'.
+            Return ONLY valid JSON.`,
+        },
+        { role: 'user', content: `Summarize these meals:\n${mealDescriptions}` },
+      ],
+      temperature: 0.7,
+      response_format: { type: "json_object" }
+    });
+
+    const content = response.choices[0].message.content;
+    return JSON.parse(content);
+  } catch (err) {
+    console.error('OpenAI session summary error:', err.message);
+    return { overallSummary: "Session complete. You've logged multiple items successfully. Aim for color and variety in your next meal!" };
+  }
+}
+
 
 // ═══════════════════════════════════════════════════════════
 // Mock Responses (when OpenAI is not configured)
@@ -184,6 +219,7 @@ function getMockMealAnalysis(description) {
 
   return {
     calories, protein, carbs, fat, fiber,
+    goodParts: `This meal is a solid choice! ${words.includes('salad') ? 'The leafy greens provide excellent micronutrients and fiber.' : 'It provides the energy you need for your day.'}`,
     summary: `Estimated nutritional breakdown for "${description}". These are approximate values.`,
     healthTips: [
       'Try to include a variety of colorful vegetables in your meals.',

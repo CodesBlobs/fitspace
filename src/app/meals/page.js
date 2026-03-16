@@ -21,7 +21,9 @@ export default function MealsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analysis, setAnalysis] = useState(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [sessionMeals, setSessionMeals] = useState([]);
+  const [overallSummary, setOverallSummary] = useState(null);
 
   useEffect(() => { fetchMeals(); }, []);
 
@@ -36,13 +38,21 @@ export default function MealsPage() {
     }
   };
 
-  // AI meal analysis
-  const handleAnalyze = async () => {
+  // Add meal to current session
+  const handleAddToSession = async () => {
     if (!description.trim()) return;
     setAnalyzing(true);
     try {
       const { data } = await api.post('/ai/analyze-meal', { description });
-      setAnalysis(data.analysis);
+      const newMeal = {
+        description,
+        mealType,
+        ...data.analysis,
+        id: Math.random().toString(36).substr(2, 9), // Client-side ID for UI
+        loggedAt: new Date().toISOString(),
+      };
+      setSessionMeals([...sessionMeals, newMeal]);
+      setDescription('');
     } catch (err) {
       console.error('Analysis failed:', err);
     } finally {
@@ -50,32 +60,38 @@ export default function MealsPage() {
     }
   };
 
-  // Log meal (with optional AI data)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!description.trim()) return;
+  // Finish logging and save all meals
+  const handleFinishLogging = async () => {
+    if (sessionMeals.length === 0) return;
     setSaving(true);
+    setSummarizing(true);
     try {
-      const payload = {
-        description,
-        mealType,
-        ...(analysis && {
-          calories: analysis.calories,
-          protein: analysis.protein,
-          carbs: analysis.carbs,
-          fat: analysis.fat,
-          fiber: analysis.fiber,
-          aiAnalysis: JSON.stringify(analysis),
-        }),
-      };
-      await api.post('/meals', payload);
-      setDescription('');
-      setAnalysis(null);
+      // 1. Generate Overall Summary
+      const { data: summaryData } = await api.post('/ai/summarize-session', { meals: sessionMeals });
+      setOverallSummary(summaryData.summary.overallSummary);
+
+      // 2. Save all meals to DB
+      for (const meal of sessionMeals) {
+        await api.post('/meals', {
+          description: meal.description,
+          mealType: meal.mealType,
+          calories: meal.calories,
+          protein: meal.protein,
+          carbs: meal.carbs,
+          fat: meal.fat,
+          fiber: meal.fiber,
+          aiAnalysis: JSON.stringify(meal),
+        });
+      }
+
+      // 3. Refresh history and clear session (but keep summary visible)
       fetchMeals();
+      setSessionMeals([]);
     } catch (err) {
-      console.error('Failed to log meal:', err);
+      console.error('Failed to finish logging:', err);
     } finally {
       setSaving(false);
+      setSummarizing(false);
     }
   };
 
@@ -88,146 +104,190 @@ export default function MealsPage() {
     }
   };
 
+  const removeFromSession = (id) => {
+    setSessionMeals(sessionMeals.filter(m => m.id !== id));
+  };
+
+  // Group history by date
+  const groupedMeals = meals.reduce((acc, meal) => {
+    const date = new Date(meal.loggedAt).toLocaleDateString(undefined, {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+    });
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(meal);
+    return acc;
+  }, {});
+
   return (
     <AppShell>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-text">Meals & Nutrition</h1>
-          <p className="text-text-muted text-sm mt-1">Log your meals and get AI-powered nutrition analysis</p>
+          <p className="text-text-muted text-sm mt-1">Track your foods and get AI insights for better health</p>
         </div>
 
-        {/* Log Meal Form */}
-        <div className="glass-card p-6 mb-8 animate-fade-in" style={{ opacity: 0 }}>
-          <h2 className="text-lg font-semibold text-text mb-4">🍽️ Log a Meal</h2>
-          <form onSubmit={handleSubmit}>
-            {/* Meal Type Selector */}
-            <div className="flex gap-2 mb-4">
-              {mealTypes.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setMealType(t.value)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                    mealType === t.value
-                      ? 'bg-lavender-light text-lavender-dark border-2 border-lavender-dark'
-                      : 'bg-surface-subtle text-text-muted border-2 border-transparent hover:border-border'
-                  }`}
-                >
-                  <span>{t.icon}</span>
-                  {t.label}
-                </button>
-              ))}
+        {/* Outer Card: Current Logging Session */}
+        <div className="glass-card overflow-hidden mb-12 animate-fade-in" style={{ opacity: 0 }}>
+          <div className="bg-lavender-light/30 px-6 py-4 border-b border-border flex justify-between items-center">
+            <div>
+              <h2 className="text-lg font-semibold text-lavender-dark">☀️ Logging Session</h2>
+              <p className="text-xs text-text-muted">{new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' })}</p>
             </div>
-
-            {/* Description */}
-            <div className="mb-4">
-              <textarea
-                value={description}
-                onChange={(e) => { setDescription(e.target.value); setAnalysis(null); }}
-                className="input min-h-[80px] resize-none"
-                placeholder="Describe your meal... e.g., Grilled chicken salad with avocado and quinoa"
-                rows={3}
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={handleAnalyze}
-                disabled={analyzing || !description.trim()}
-                className="btn-secondary"
+            {sessionMeals.length > 0 && (
+              <button 
+                onClick={handleFinishLogging} 
+                disabled={saving}
+                className="btn-primary py-2 px-6 text-sm flex items-center gap-2"
               >
-                {analyzing ? '⏳ Analyzing...' : '🤖 AI Analyze'}
+                {saving ? '⏳ Saving...' : '🏁 Finish Logging'}
               </button>
-              <button type="submit" disabled={saving || !description.trim()} className="btn-primary">
-                {saving ? '⏳ Saving...' : '✅ Log Meal'}
-              </button>
-            </div>
-          </form>
+            )}
+          </div>
 
-          {/* AI Analysis Result */}
-          {analysis && (
-            <div className="mt-5 p-5 rounded-xl animate-fade-in" style={{
-              opacity: 0,
-              background: 'linear-gradient(135deg, rgba(184,240,216,0.3), rgba(186,230,253,0.3))',
-            }}>
-              <h3 className="text-sm font-semibold text-mint-dark uppercase tracking-wide mb-3">🤖 AI Nutrition Analysis</h3>
-              <div className="grid grid-cols-5 gap-3 mb-3">
-                {[
-                  { label: 'Calories', value: `${analysis.calories}`, unit: 'kcal', color: 'peach' },
-                  { label: 'Protein', value: `${analysis.protein}`, unit: 'g', color: 'lavender' },
-                  { label: 'Carbs', value: `${analysis.carbs}`, unit: 'g', color: 'sky' },
-                  { label: 'Fat', value: `${analysis.fat}`, unit: 'g', color: 'rose' },
-                  { label: 'Fiber', value: `${analysis.fiber}`, unit: 'g', color: 'mint' },
-                ].map((item) => (
-                  <div key={item.label} className={`p-3 rounded-xl bg-${item.color}-light text-center`}>
-                    <div className={`text-lg font-bold text-${item.color}-dark`}>{item.value}</div>
-                    <div className="text-xs text-text-muted">{item.label} ({item.unit})</div>
-                  </div>
-                ))}
+          <div className="p-6">
+            {/* Overall Summary (If finished) */}
+            {overallSummary && (
+              <div className="mb-8 p-6 rounded-2xl bg-mint-light/20 border-2 border-mint-light animate-bounce-in">
+                <h3 className="text-sm font-bold text-mint-dark uppercase tracking-widest mb-2 flex items-center gap-2">
+                  ✨ Overall Session Summary
+                </h3>
+                <p className="text-text font-medium leading-relaxed italic">"{overallSummary}"</p>
+                <button 
+                  onClick={() => setOverallSummary(null)} 
+                  className="mt-4 text-xs text-text-muted hover:text-text underline"
+                >
+                  Dismiss
+                </button>
               </div>
-              {analysis.summary && <p className="text-sm text-text-muted">{analysis.summary}</p>}
-              {analysis.healthTips && (
-                <div className="mt-3 space-y-1">
-                  {analysis.healthTips.map((tip, i) => (
-                    <p key={i} className="text-xs text-text-muted">💡 {tip}</p>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Meal History */}
-        <div>
-          <h2 className="text-lg font-semibold text-text mb-4">Recent Meals</h2>
-          {loading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="glass-card p-4 animate-pulse-soft">
-                  <div className="h-4 w-3/4 bg-lavender-light rounded mb-2" />
-                  <div className="h-3 w-1/2 bg-lavender-light rounded" />
-                </div>
-              ))}
-            </div>
-          ) : meals.length === 0 ? (
-            <div className="glass-card p-8 text-center">
-              <span className="text-4xl mb-3 block">🍽️</span>
-              <p className="text-text-muted">No meals logged yet. Start tracking above!</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {meals.map((meal) => (
-                <div key={meal.id} className="glass-card p-4 flex items-center gap-4 animate-fade-in" style={{ opacity: 0 }}>
-                  <span className="text-2xl">
-                    {mealTypes.find((t) => t.value === meal.mealType)?.icon || '🍽️'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-text truncate">{meal.description}</p>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      {meal.mealType} · {new Date(meal.loggedAt).toLocaleString()}
+            {/* Nested Inner Cards: Each Food Entry */}
+            <div className="space-y-4 mb-8">
+              {sessionMeals.map((meal) => (
+                <div key={meal.id} className="p-5 rounded-2xl bg-surface border-2 border-border/50 shadow-sm animate-fade-in relative group">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl p-2 bg-surface-subtle rounded-xl">
+                        {mealTypes.find((t) => t.value === meal.mealType)?.icon || '🍽️'}
+                      </span>
+                      <div>
+                        <h4 className="font-bold text-text">{meal.description}</h4>
+                        <div className="flex gap-2 mt-1">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-peach-light text-peach-dark font-bold uppercase">{meal.calories} cal</span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-lavender-light text-lavender-dark font-bold uppercase">P:{meal.protein}g</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => removeFromSession(meal.id)}
+                      className="text-text-muted hover:text-rose-dark transition-colors p-1"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {/* AI Good Parts */}
+                  <div className="mt-3 py-3 px-4 rounded-xl bg-sky-light/10 border border-sky-light/30">
+                    <p className="text-sm text-sky-dark leading-relaxed">
+                      <span className="font-bold">✨ Good Parts:</span> {meal.goodParts}
                     </p>
                   </div>
-                  {meal.calories && (
-                    <div className="flex gap-3 text-xs text-text-muted">
-                      <span className="text-peach-dark font-semibold">{meal.calories.toFixed(0)} cal</span>
-                      <span>P:{meal.protein?.toFixed(0)}g</span>
-                      <span>C:{meal.carbs?.toFixed(0)}g</span>
-                      <span>F:{meal.fat?.toFixed(0)}g</span>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => handleDelete(meal.id)}
-                    className="text-text-light hover:text-rose-dark transition-colors text-sm p-1"
-                    title="Delete"
-                  >
-                    ✕
-                  </button>
                 </div>
               ))}
             </div>
+
+            {/* Input Form (The Plus Section) */}
+            <div className="bg-surface-subtle p-6 rounded-3xl border-2 border-dashed border-border/50">
+              <div className="flex gap-2 mb-4">
+                {mealTypes.map((t) => (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => setMealType(t.value)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      mealType === t.value
+                        ? 'bg-lavender-light text-lavender-dark border-2 border-lavender-dark'
+                        : 'bg-surface text-text-muted border-2 border-transparent hover:border-border'
+                    }`}
+                  >
+                    <span>{t.icon}</span>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-3">
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="input flex-1 min-h-[60px] resize-none"
+                  placeholder="What else did you eat? e.g., a handful of almonds"
+                  rows={2}
+                />
+                <button
+                  onClick={handleAddToSession}
+                  disabled={analyzing || !description.trim()}
+                  className="bg-lavender-dark text-white p-4 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg self-end disabled:opacity-50"
+                  title="Add to session"
+                >
+                  {analyzing ? '⏳' : <span className="text-2xl leading-none">+</span>}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Grouped History View */}
+        <div className="space-y-10">
+          <h2 className="text-xl font-bold text-text">History</h2>
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="animate-pulse-soft">
+                  <div className="h-6 w-48 bg-lavender-light rounded mb-4" />
+                  <div className="space-y-3">
+                    <div className="h-16 w-full bg-lavender-light/50 rounded-2xl" />
+                    <div className="h-16 w-full bg-lavender-light/50 rounded-2xl" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : Object.keys(groupedMeals).length === 0 ? (
+            <div className="glass-card p-12 text-center border-dashed">
+              <span className="text-5xl mb-4 block">📸</span>
+              <h3 className="text-lg font-semibold text-text">No meals logged yet</h3>
+              <p className="text-text-muted mt-2 max-w-xs mx-auto">Start your first logging session above to track your nutrition progress!</p>
+            </div>
+          ) : (
+            Object.entries(groupedMeals).map(([date, dayMeals]) => (
+              <div key={date} className="animate-fade-in" style={{ opacity: 0 }}>
+                <h3 className="text-sm font-bold text-text-muted mb-4 sticky top-0 py-2 bg-background/80 backdrop-blur-sm z-10">{date}</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {dayMeals.map((meal) => (
+                    <div key={meal.id} className="glass-card p-5 group flex items-start gap-4">
+                      <span className="text-3xl p-3 bg-white/50 rounded-2xl shadow-sm group-hover:rotate-6 transition-transform">
+                        {mealTypes.find((t) => t.value === meal.mealType)?.icon || '🍽️'}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-text group-hover:text-lavender-dark transition-colors">{meal.description}</p>
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="text-xs font-semibold text-peach-dark">{meal.calories?.toFixed(0)} kcal</span>
+                          <span className="text-xs text-text-muted">·</span>
+                          <span className="text-[10px] text-text-muted uppercase tracking-wider">{meal.mealType}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDelete(meal.id)}
+                        className="text-text-light hover:text-rose-dark transition-colors text-sm opacity-0 group-hover:opacity-100 p-1"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </div>
