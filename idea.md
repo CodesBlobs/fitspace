@@ -1,10 +1,9 @@
 You are an expert full-stack developer. Generate a **complete, fully working web application** called **FitSpace**, an AI-powered fitness assistant, using a **modern high-end stack**:
 
-- **Frontend:** Next.js + React + Tailwind CSS  
-- **Backend:** Node.js + Express  
-- **Database:** PostgreSQL (include schema and connection setup)  
-- **Authentication:** JWT or Firebase Auth  
-- **AI Integration:** OpenAI API (or similar) for food analysis, workout suggestions, and daily insights  
+- **Frontend & Backend:** Next.js + React + Tailwind CSS (Unified API Routes)
+- **Database:** PostgreSQL (include schema and connection setup)
+- **Authentication:** JWT (Internal)
+- **AI Integration:** OpenAI API (or similar) for food analysis, workout suggestions, and daily insights
 
 **Requirements:**  
 1. The app should track:
