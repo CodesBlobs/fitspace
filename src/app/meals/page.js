@@ -24,6 +24,8 @@ export default function MealsPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [sessionMeals, setSessionMeals] = useState([]);
   const [overallSummary, setOverallSummary] = useState(null);
+  const [expandedMealId, setExpandedMealId] = useState(null);
+  const [deletingMealId, setDeletingMealId] = useState(null);
 
   useEffect(() => { fetchMeals(); }, []);
 
@@ -264,27 +266,116 @@ export default function MealsPage() {
               <div key={date} className="animate-fade-in" style={{ opacity: 0 }}>
                 <h3 className="text-sm font-bold text-text-muted mb-4 sticky top-0 py-2 bg-background/80 backdrop-blur-sm z-10">{date}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {dayMeals.map((meal) => (
-                    <div key={meal.id} className="glass-card p-5 group flex items-start gap-4">
-                      <span className="text-3xl p-3 bg-white/50 rounded-2xl shadow-sm group-hover:rotate-6 transition-transform">
-                        {mealTypes.find((t) => t.value === meal.mealType)?.icon || '🍽️'}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-text group-hover:text-lavender-dark transition-colors">{meal.description}</p>
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <span className="text-xs font-semibold text-peach-dark">{meal.calories?.toFixed(0)} kcal</span>
-                          <span className="text-xs text-text-muted">·</span>
-                          <span className="text-[10px] text-text-muted uppercase tracking-wider">{meal.mealType}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => handleDelete(meal.id)}
-                        className="text-text-light hover:text-rose-dark transition-colors text-sm opacity-0 group-hover:opacity-100 p-1"
+                  {dayMeals.map((meal) => {
+                    const isExpanded = expandedMealId === meal.id;
+                    const isDeleting = deletingMealId === meal.id;
+                    return (
+                      <div 
+                        key={meal.id} 
+                        className={`glass-card p-5 group flex flex-col gap-4 transform transition-all duration-300 ${isExpanded ? 'scale-[1.02] shadow-xl border-lavender-light/50 z-10' : 'hover:scale-[1.01] hover:border-border/80'}`}
                       >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
+                        <div 
+                          className="flex items-start gap-4 cursor-pointer w-full"
+                          onClick={() => !isDeleting && setExpandedMealId(isExpanded ? null : meal.id)}
+                        >
+                          <span className={`text-3xl p-3 bg-white/50 rounded-2xl shadow-sm transition-transform duration-300 ${isExpanded ? 'rotate-12' : 'group-hover:rotate-6'}`}>
+                            {mealTypes.find((t) => t.value === meal.mealType)?.icon || '🍽️'}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-text group-hover:text-lavender-dark transition-colors">{meal.description}</p>
+                            <div className="flex items-center gap-3 mt-1.5">
+                              <span className="text-xs font-semibold text-peach-dark">{meal.calories?.toFixed(0)} kcal</span>
+                              <span className="text-xs text-text-muted">·</span>
+                              <span className="text-[10px] text-text-muted uppercase tracking-wider">{meal.mealType}</span>
+                              {isExpanded && (
+                                <span className="text-[10px] text-lavender-dark/80 ml-auto animate-fade-in font-medium">Click to collapse</span>
+                              )}
+                            </div>
+                          </div>
+                          {isDeleting ? (
+                            <div className="flex flex-col sm:flex-row items-center gap-2 animate-fade-in" onClick={(e) => e.stopPropagation()}>
+                              <button
+                                onClick={() => {
+                                  handleDelete(meal.id);
+                                  setDeletingMealId(null);
+                                }}
+                                className="px-3 py-1.5 bg-rose-500 text-white text-xs font-bold rounded-lg hover:bg-rose-600 transition-colors shadow-md animate-pulse"
+                              >
+                                Are you sure you want to remove?
+                              </button>
+                              <button
+                                onClick={() => setDeletingMealId(null)}
+                                className="px-3 py-1.5 bg-surface-subtle text-text-muted text-xs font-bold rounded-lg hover:bg-border transition-colors border border-border"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeletingMealId(meal.id);
+                              }}
+                              className="text-text-muted hover:text-white transition-colors p-2 rounded-full hover:bg-rose-500 opacity-0 group-hover:opacity-100"
+                              title="Remove meal"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Expanded Detailed View */}
+                        {isExpanded && !isDeleting && (
+                          <div className="mt-2 pt-4 border-t border-border/50 animate-fade-in cursor-default" onClick={(e) => e.stopPropagation()}>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+                              <div className="bg-surface-subtle p-3 rounded-xl text-center border border-border/30 hover:shadow-md transition-shadow">
+                                <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-bold">Energy</p>
+                                <p className="font-bold text-xl text-peach-dark flex items-baseline justify-center gap-1">
+                                  {meal.calories?.toFixed(0) || 0} <span className="text-xs font-medium">kcal</span>
+                                </p>
+                                <p className="text-xs text-text-muted/80 mt-1 font-medium bg-background rounded-full mx-2 py-0.5 border border-border/50">{(meal.calories * 4.184).toFixed(0)} kJ</p>
+                              </div>
+                              <div className="bg-surface-subtle p-3 rounded-xl text-center border border-border/30 hover:shadow-md transition-shadow">
+                                <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-bold">Protein</p>
+                                <p className="font-bold text-xl text-lavender-dark flex items-baseline justify-center gap-1">
+                                  {meal.protein?.toFixed(1) || 0} <span className="text-xs font-medium">g</span>
+                                </p>
+                              </div>
+                              <div className="bg-surface-subtle p-3 rounded-xl text-center border border-border/30 hover:shadow-md transition-shadow">
+                                <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-bold">Carbs</p>
+                                <p className="font-bold text-xl text-sky-dark flex items-baseline justify-center gap-1">
+                                  {meal.carbs?.toFixed(1) || 0} <span className="text-xs font-medium">g</span>
+                                </p>
+                              </div>
+                              <div className="bg-surface-subtle p-3 rounded-xl text-center border border-border/30 hover:shadow-md transition-shadow">
+                                <p className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-bold">Fat</p>
+                                <p className="font-bold text-xl text-text flex items-baseline justify-center gap-1 text-rose-dark">
+                                  {meal.fat?.toFixed(1) || 0} <span className="text-xs font-medium">g</span>
+                                </p>
+                              </div>
+                            </div>
+                            {meal.aiAnalysis && (
+                              <div className="bg-sky-light/10 p-4 rounded-xl border border-sky-light/30 shadow-inner">
+                                <h4 className="text-[10px] font-bold text-sky-dark uppercase tracking-wider mb-2 flex items-center gap-2">
+                                  <span>✨</span> AI Insight
+                                </h4>
+                                <p className="text-sm text-text-muted leading-relaxed font-medium">
+                                  {(() => {
+                                    try {
+                                      const analysis = JSON.parse(meal.aiAnalysis);
+                                      return analysis.goodParts || 'This looks like a solid meal addition to your day.';
+                                    } catch(e) {
+                                      return 'Packed with nutrients to keep you energized.';
+                                    }
+                                  })()}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))
