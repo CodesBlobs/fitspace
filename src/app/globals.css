@@ -3,39 +3,39 @@
 /* ─── FitSpace Pastel Design System ──────────────────────── */
 
 @theme inline {
-  /* Pastel palette */
-  --color-mint: #b8f0d8;
-  --color-mint-light: #dff8ec;
-  --color-mint-dark: #68d4a0;
-  --color-lavender: #d4c5f9;
-  --color-lavender-light: #ede6fd;
-  --color-lavender-dark: #a78bfa;
-  --color-peach: #fcd5c0;
-  --color-peach-light: #fde8da;
-  --color-peach-dark: #f9a870;
-  --color-sky: #bae6fd;
-  --color-sky-light: #e0f2fe;
-  --color-sky-dark: #60b5f6;
-  --color-rose: #fecdd3;
-  --color-rose-light: #ffe4e6;
-  --color-rose-dark: #fb7185;
-  --color-sunshine: #fef08a;
-  --color-sunshine-light: #fef9c3;
-  --color-sunshine-dark: #eab308;
+  /* Vibrant Professional Palette */
+  --color-mint: #34d399;        /* emerald-400 */
+  --color-mint-light: #d1fae5;  /* emerald-100 */
+  --color-mint-dark: #059669;   /* emerald-600 */
+  --color-lavender: #a78bfa;    /* violet-400 */
+  --color-lavender-light: #ede9fe; /* violet-100 */
+  --color-lavender-dark: #7c3aed;  /* violet-600 */
+  --color-peach: #fb923c;       /* orange-400 */
+  --color-peach-light: #ffedd5; /* orange-100 */
+  --color-peach-dark: #ea580c;  /* orange-600 */
+  --color-sky: #60a5fa;         /* blue-400 */
+  --color-sky-light: #dbeafe;   /* blue-100 */
+  --color-sky-dark: #2563eb;    /* blue-600 */
+  --color-rose: #fb7185;        /* rose-400 */
+  --color-rose-light: #ffe4e6;  /* rose-100 */
+  --color-rose-dark: #e11d48;   /* rose-600 */
+  --color-sunshine: #fbbf24;    /* amber-400 */
+  --color-sunshine-light: #fef3c7; /* amber-100 */
+  --color-sunshine-dark: #d97706;  /* amber-600 */
 
   /* Neutrals */
-  --color-bg: #faf9f7;
+  --color-bg: #f8fafc;          /* slate-50 */
   --color-surface: #ffffff;
-  --color-surface-subtle: #f5f4f2;
-  --color-text: #1e1b2e;
-  --color-text-muted: #6b7280;
-  --color-text-light: #9ca3af;
-  --color-border: #e5e7eb;
+  --color-surface-subtle: #f1f5f9; /* slate-100 */
+  --color-text: #0f172a;        /* slate-900 */
+  --color-text-muted: #64748b;  /* slate-500 */
+  --color-text-light: #94a3b8;  /* slate-400 */
+  --color-border: #e2e8f0;      /* slate-200 */
 
   /* Sidebar */
-  --color-sidebar-bg: #1e1b2e;
-  --color-sidebar-text: #e2dff0;
-  --color-sidebar-active: #a78bfa;
+  --color-sidebar-bg: #0f172a;  /* slate-900 */
+  --color-sidebar-text: #f8fafc; /* slate-50 */
+  --color-sidebar-active: #8b5cf6; /* violet-500 */
 
   /* Fonts */
   --font-sans: 'Inter', 'Outfit', system-ui, sans-serif;
