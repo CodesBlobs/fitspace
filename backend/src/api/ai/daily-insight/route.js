@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import { getDailyInsight } from '@/lib/services/openai';
-import { getUserIdFromRequest } from '@/lib/auth-util';
+import prisma from '../lib/prisma';
+import { getDailyInsight } from '../lib/services/openai';
+import { getUserIdFromRequest } from '../lib/auth-util';
 
 export async function GET(req) {
   try {

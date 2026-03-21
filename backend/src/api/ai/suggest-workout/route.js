@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { suggestWorkout } from '@/lib/services/openai';
-import { getUserIdFromRequest } from '@/lib/auth-util';
+import { suggestWorkout } from '../lib/services/openai';
+import { getUserIdFromRequest } from '../lib/auth-util';
 
 export async function POST(req) {
   try {

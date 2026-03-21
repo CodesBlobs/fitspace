@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { transcribeAudio } from '@/lib/services/elevenlabs';
-import { refineTranscription } from '@/lib/services/openai';
-import { getUserIdFromRequest } from '@/lib/auth-util';
+import { transcribeAudio } from '../lib/services/elevenlabs';
+import { refineTranscription } from '../lib/services/openai';
+import { getUserIdFromRequest } from '../lib/auth-util';
 import fs from 'fs';
 import path from 'path';
 import { tmpdir } from 'os';

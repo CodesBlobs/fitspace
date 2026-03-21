@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getUserIdFromRequest } from '@/lib/auth-util';
+import { getUserIdFromRequest } from '../lib/auth-util';
 import OpenAI from 'openai';
 
 const apiKey = process.env.OPENAI_API_KEY;

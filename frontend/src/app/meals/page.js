@@ -154,7 +154,7 @@ export default function MealsPage() {
                 <h3 className="text-sm font-bold text-mint-dark uppercase tracking-widest mb-2 flex items-center gap-2">
                   ✨ Overall Session Summary
                 </h3>
-                <p className="text-text font-medium leading-relaxed italic">"{overallSummary}"</p>
+                <p className="text-text font-medium leading-relaxed italic">&quot;{overallSummary}&quot;</p>
                 <button 
                   onClick={() => setOverallSummary(null)} 
                   className="mt-4 text-xs text-text-muted hover:text-text underline"

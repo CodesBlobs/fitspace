@@ -82,7 +82,7 @@ export default function WellnessPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {gratitudes.map((entry) => (
                 <div key={entry.id} className="bg-white/5 p-4 rounded-xl border border-white/5 hover:border-mint/20 transition-colors">
-                  <p className="text-sm text-text italic">"{entry.content}"</p>
+                  <p className="text-sm text-text italic">&quot;{entry.content}&quot;</p>
                   <p className="text-[10px] text-text-muted mt-2 uppercase tracking-tighter">
                     {new Date(entry.loggedAt).toLocaleDateString()}
                   </p>
@@ -91,7 +91,7 @@ export default function WellnessPage() {
             </div>
           ) : (
             <p className="text-sm text-text-muted text-center py-10 italic">
-              Your journal is empty. What's one small thing that made you smile today?
+              Your journal is empty. What&apos;s one small thing that made you smile today?
             </p>
           )}
         </section>

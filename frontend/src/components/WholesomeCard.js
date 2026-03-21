@@ -55,11 +55,11 @@ export default function WholesomeCard() {
       <div className="p-5 flex-1 flex flex-col gap-6">
         {/* Affirmation */}
         <div className="relative">
-          <div className="absolute -top-2 -left-2 text-3xl opacity-20 grayscale">"</div>
+          <div className="absolute -top-2 -left-2 text-3xl opacity-20 grayscale">&quot;</div>
           <p className="text-text-muted italic text-sm leading-relaxed px-4 text-center">
             {loading ? 'Thinking happy thoughts...' : affirmation}
           </p>
-          <div className="absolute -bottom-2 -right-2 text-3xl opacity-20 grayscale">"</div>
+          <div className="absolute -bottom-2 -right-2 text-3xl opacity-20 grayscale">&quot;</div>
         </div>
 
         {/* Gratitude Form */}

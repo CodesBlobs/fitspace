@@ -71,7 +71,7 @@ export default function LandingPage() {
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-3">Smart Workouts</h3>
           <p className="text-gray-600 leading-relaxed">
-            Tell us your equipment and focus area. We'll generate a personalized, step-by-step workout routine instantly.
+            Tell us your equipment and focus area. We&apos;ll generate a personalized, step-by-step workout routine instantly.
           </p>
         </div>
 

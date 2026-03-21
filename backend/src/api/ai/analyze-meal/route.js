@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { analyzeMeal } from '@/lib/services/openai';
-import { getUserIdFromRequest } from '@/lib/auth-util';
+import { analyzeMeal } from '../lib/services/openai';
+import { getUserIdFromRequest } from '../lib/auth-util';
 
 export async function POST(req) {
   try {
