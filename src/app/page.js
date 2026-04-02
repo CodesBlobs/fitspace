@@ -1,4 +1,8 @@
+"use client";
 import Link from 'next/link';
+import Image from 'next/image';
+import { motion } from 'framer-motion';
+import { Utensils, Dumbbell, Activity } from 'lucide-react';
 
 export default function LandingPage() {
   return (
@@ -9,10 +13,13 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 p-6 flex justify-between items-center z-50 bg-white/30 backdrop-blur-md border-b border-white/20">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 relative">
-            <img 
-              src="/logo.png" 
-              alt="FitSpace Logo" 
-              className="w-full h-full object-contain"
+            <Image
+              src="/logo.png"
+              alt="FitSpace Logo"
+              fill
+              className="object-contain"
+              sizes="32px"
+              priority
             />
           </div>
           <span className="text-xl font-bold tracking-tight text-gray-800">FitSpace</span>
@@ -55,9 +62,12 @@ export default function LandingPage() {
       <section className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Feature 1 */}
         <div className="glass-card p-8 group hover:-translate-y-2 transition-transform duration-300">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm" style={{ background: 'linear-gradient(135deg, #f0fdf4, #bbf7d0)' }}>
-            🥗
-          </div>
+          <motion.div 
+            whileHover={{ scale: 1.15, rotate: 5 }} 
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm overflow-hidden bg-white border border-gray-100" 
+          >
+            <Utensils className="w-8 h-8 text-black" />
+          </motion.div>
           <h3 className="text-xl font-bold text-gray-800 mb-3">AI Nutritionist</h3>
           <p className="text-gray-600 leading-relaxed">
             Just type what you ate. Our AI automatically calculates estimated calories, protein, carbs, and fat with tailored health tips.
@@ -66,9 +76,12 @@ export default function LandingPage() {
 
         {/* Feature 2 */}
         <div className="glass-card p-8 group hover:-translate-y-2 transition-transform duration-300">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm" style={{ background: 'linear-gradient(135deg, #eff6ff, #bfdbfe)' }}>
-            💪
-          </div>
+          <motion.div 
+            whileHover={{ scale: 1.15, rotate: -5 }} 
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm overflow-hidden bg-white border border-gray-100" 
+          >
+            <Dumbbell className="w-8 h-8 text-black" />
+          </motion.div>
           <h3 className="text-xl font-bold text-gray-800 mb-3">Smart Workouts</h3>
           <p className="text-gray-600 leading-relaxed">
             Tell us your equipment and focus area. We'll generate a personalized, step-by-step workout routine instantly.
@@ -77,9 +90,12 @@ export default function LandingPage() {
 
         {/* Feature 3 */}
         <div className="glass-card p-8 group hover:-translate-y-2 transition-transform duration-300">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm" style={{ background: 'linear-gradient(135deg, #fff1f2, #fbcfe8)' }}>
-            📊
-          </div>
+          <motion.div 
+            whileHover={{ scale: 1.15, rotate: 5 }} 
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-sm overflow-hidden bg-white border border-gray-100" 
+          >
+            <Activity className="w-8 h-8 text-black" />
+          </motion.div>
           <h3 className="text-xl font-bold text-gray-800 mb-3">Holistic Tracking</h3>
           <p className="text-gray-600 leading-relaxed">
             Monitor water intake, sleep quality, and daily mood all in one beautiful, pastel-tinted dashboard.

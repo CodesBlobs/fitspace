@@ -4,6 +4,7 @@
 // Pastel gradient sidebar with icons and active states
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 
@@ -13,6 +14,7 @@ const navItems = [
   { href: '/workouts', label: 'Workouts', icon: '💪' },
   { href: '/tracking', label: 'Tracking', icon: '💧' },
   { href: '/wellness', label: 'Wellness', icon: '🌿' },
+  { href: '/leaderboard', label: 'Leaderboard', icon: '🏆' },
   { href: '/log', label: 'Quick Log', icon: '➕', primary: true },
   { href: '/settings', label: 'Settings', icon: '⚙️' },
 ];
@@ -30,10 +32,13 @@ export default function Sidebar() {
       <div className="p-6 pb-4">
         <div className="flex items-center gap-3 group transition-all duration-300">
           <div className="w-12 h-12 relative">
-            <img 
-              src="/logo-premium.png" 
-              alt="FitSpace Premium Logo" 
-              className="w-full h-full object-contain filter drop-shadow-lg transition-transform duration-500 group-hover:scale-110"
+            <Image
+              src="/logo-premium.png"
+              alt="FitSpace Premium Logo"
+              fill
+              className="object-contain filter drop-shadow-lg transition-transform duration-500 group-hover:scale-110"
+              sizes="48px"
+              priority
             />
           </div>
           <div>

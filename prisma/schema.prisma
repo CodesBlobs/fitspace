@@ -30,14 +30,13 @@ model User {
   height Float? // cm
   avatar String? // emoji or icon name
 
-  meals     Meal[]
-
-
-  workouts  Workout[]
-  waterLogs WaterLog[]
-  sleepLogs SleepLog[]
-  moodLogs  MoodLog[]
+  meals            Meal[]
+  workouts         Workout[]
+  waterLogs        WaterLog[]
+  sleepLogs        SleepLog[]
+  moodLogs         MoodLog[]
   gratitudeEntries GratitudeEntry[]
+  leaderboardEntries LeaderboardEntry[]
 }
 
 // ─── Meal ──────────────────────────────────────────────────
@@ -113,4 +112,36 @@ model GratitudeEntry {
   content   String
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
+}
+
+// ─── Leaderboard ───────────────────────────────────────────
+model LeaderboardEntry {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+
+  // Weekly stats
+  weekStart    DateTime
+  weekEnd      DateTime
+
+  // Aggregated metrics
+  totalWorkouts      Int      @default(0)
+  workoutMinutes     Int      @default(0)
+  workoutsCalories   Float    @default(0)
+  mealsLogged        Int      @default(0)
+  totalCalories      Float    @default(0)
+  waterIntake        Float    @default(0)
+  sleepHours         Float    @default(0)
+  moodScore          Float    @default(0)
+
+  // Computed score (for ranking)
+  score          Float    @default(0)
+  rank           Int?
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, weekStart])
+  @@index([weekStart])
+  @@index([score])
 }
